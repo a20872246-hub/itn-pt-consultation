@@ -745,6 +745,168 @@ header .subtitle {
   padding-top: 8px;
 }
 
+/* 내러티브 */
+.narrative-box {
+  background: #f8faff;
+  border-radius: 12px;
+  padding: 20px 24px;
+  border: 1.5px solid #e0e7ff;
+}
+
+.narrative-sentences {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.narrative-sentences p {
+  font-size: 0.95rem;
+  line-height: 1.75;
+  color: #333;
+  padding-left: 14px;
+  border-left: 3px solid #e0e7ff;
+}
+
+.em-danger { color: #dc2626; font-style: normal; font-weight: 700; }
+.em-warn   { color: #d97706; font-style: normal; font-weight: 700; }
+.em-good   { color: #16a34a; font-style: normal; font-weight: 700; }
+
+/* 목표 수치 바 */
+.target-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.target-bar-item {}
+
+.target-bar-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.target-label {
+  font-size: 0.88rem;
+  font-weight: 700;
+  color: #444;
+}
+
+.target-values {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.88rem;
+}
+
+.target-current { color: #888; font-weight: 600; }
+.target-arrow   { color: #bbb; }
+.target-goal    { font-weight: 700; color: #4f46e5; }
+.target-goal--good { color: #16a34a; }
+.target-diff    { font-size: 0.8rem; }
+.diff-good { color: #16a34a; }
+.diff-bad  { color: #dc2626; }
+
+.target-bar-track {
+  position: relative;
+  height: 10px;
+  background: #f0f0f0;
+  border-radius: 999px;
+  overflow: visible;
+}
+
+.target-bar-fill {
+  height: 100%;
+  border-radius: 999px;
+  transition: width 0.8s ease;
+}
+
+.fill-danger { background: linear-gradient(90deg, #fca5a5, #f87171); }
+.fill-good   { background: linear-gradient(90deg, #86efac, #4ade80); }
+
+.target-bar-goal-marker {
+  position: absolute;
+  top: -4px;
+  width: 4px;
+  height: 18px;
+  background: #4f46e5;
+  border-radius: 2px;
+  transform: translateX(-50%);
+}
+
+.target-note {
+  font-size: 0.8rem;
+  color: #999;
+  margin-top: 14px;
+  text-align: right;
+}
+
+/* 타임라인 */
+.timeline {
+  position: relative;
+  padding-left: 28px;
+}
+
+.timeline::before {
+  content: '';
+  position: absolute;
+  left: 7px;
+  top: 8px;
+  bottom: 8px;
+  width: 2px;
+  background: linear-gradient(to bottom, #4f46e5, #e0e7ff);
+}
+
+.timeline-item {
+  position: relative;
+  padding-bottom: 24px;
+}
+
+.timeline-item:last-child { padding-bottom: 0; }
+
+.timeline-dot {
+  position: absolute;
+  left: -24px;
+  top: 4px;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: white;
+  border: 3px solid #4f46e5;
+  z-index: 1;
+}
+
+.timeline-item:last-child .timeline-dot {
+  background: #4f46e5;
+}
+
+.timeline-content {}
+
+.timeline-week {
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: #4f46e5;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-bottom: 2px;
+}
+
+.timeline-title {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: #1a1a2e;
+  margin-bottom: 4px;
+}
+
+.timeline-desc {
+  font-size: 0.85rem;
+  color: #666;
+  line-height: 1.6;
+}
+
 /* 건강 리스크 */
 .risk-list {
   display: flex;
@@ -788,6 +950,45 @@ header .subtitle {
   font-size: 0.85rem;
   color: #555;
   line-height: 1.5;
+}
+
+/* 클로징 박스 */
+.closing-box {
+  margin-top: 8px;
+  background: linear-gradient(135deg, #1a1a2e 0%, #2d2b55 100%);
+  border-radius: 16px;
+  padding: 32px 28px;
+  color: white;
+  text-align: center;
+}
+
+.closing-headline {
+  font-size: 1.25rem;
+  font-weight: 800;
+  margin-bottom: 16px;
+  line-height: 1.4;
+  color: #fff;
+}
+
+.closing-body {
+  font-size: 0.92rem;
+  line-height: 1.85;
+  color: #c7d2fe;
+  margin-bottom: 20px;
+}
+
+.closing-body strong {
+  color: #a5f3fc;
+  font-weight: 700;
+}
+
+.closing-sub {
+  font-size: 0.88rem;
+  color: #818cf8;
+  font-style: italic;
+  border-top: 1px solid rgba(255,255,255,0.1);
+  padding-top: 16px;
+  margin-top: 4px;
 }
 
 @media (max-width: 600px) {

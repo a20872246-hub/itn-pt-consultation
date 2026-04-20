@@ -381,77 +381,89 @@ function renderResult() {
   const exp = document.getElementById('experience').value;
   const freq = +document.getElementById('frequency').value;
   const injury = document.getElementById('injury').value.trim();
-
   const genderLabel = d.gender === 'male' ? '남성' : '여성';
   const expLabel = { none: '운동 경험 없음', beginner: '초보', intermediate: '중급', advanced: '고급' }[exp];
-
-  // 칼로리 목표 계산
   const tdee = Math.round(d.bmr * activityMultiplier(freq));
   const calories = calcCalorieTarget(tdee);
+  const ptRec = recommendPTPrograms(selectedGoals, a, exp, injury);
+  const targets = calcTargets(d, a);
 
   const html = `
+    <!-- 헤더 -->
     <div class="result-header">
       <div>
-        <div class="name">${d.name} 회원님</div>
-        <div class="meta">${d.age}세 · ${genderLabel} · ${expLabel} · 주 ${freq}회</div>
+        <div class="name">${d.name} 회원님의 체성분 분석 보고서</div>
+        <div class="meta">${d.age}세 · ${genderLabel} · ${expLabel} · 주 ${freq}회 운동 가능</div>
       </div>
     </div>
 
-    ${renderAlerts(a)}
-
+    <!-- 1. 체성분 진단 내러티브 -->
     <div class="result-section">
-      <h3>운동 목적</h3>
-      <div class="tag-row">
-        ${selectedGoals.map(g => `<span class="tag tag-purple">${goalLabel(g)}</span>`).join('')}
+      <h3>체성분 진단</h3>
+      <div class="narrative-box">
+        ${buildNarrative(d, a)}
       </div>
     </div>
 
+    <!-- 2. 현재 → 목표 수치 시각화 -->
     <div class="result-section">
-      <h3>인바디 종합 평가</h3>
-      <div class="tag-row">
-        <span class="tag tag-${badgeColor(a.fatStatus.cls)}">체지방 · ${a.fatStatus.label}</span>
-        <span class="tag tag-${badgeColor(a.bmiStatus.cls)}">BMI · ${a.bmiStatus.label}</span>
-        <span class="tag tag-${badgeColor(a.muscleStatus.cls)}">${a.muscleStatus.label}</span>
-        ${a.whrStatus ? `<span class="tag tag-${badgeColor(a.whrStatus.cls)}">${a.whrStatus.label}</span>` : ''}
+      <h3>현재 체성분 vs 목표</h3>
+      <div class="target-grid">
+        ${renderTargetBar('체지방률', d.fatPercent, targets.fatPercent, '%', true)}
+        ${renderTargetBar('골격근량', d.muscle, targets.muscle, 'kg', false)}
+        ${renderTargetBar('체중', d.weight, targets.weight, 'kg', true)}
+        ${d.bmr ? renderTargetBar('기초대사량', d.bmr, targets.bmr, 'kcal', false) : ''}
+      </div>
+      <p class="target-note">${targets.period}을 꾸준히 운동했을 때 도달 가능한 목표 수치입니다.</p>
+    </div>
+
+    <!-- 3. PT 프로그램 추천 -->
+    ${renderPTRecommendation(ptRec)}
+
+    <!-- 4. 예상 변화 타임라인 -->
+    <div class="result-section">
+      <h3>프로그램별 예상 변화</h3>
+      <div class="timeline">
+        ${buildTimeline(d, a, selectedGoals, ptRec).map(t => `
+          <div class="timeline-item">
+            <div class="timeline-dot"></div>
+            <div class="timeline-content">
+              <div class="timeline-week">${t.week}</div>
+              <div class="timeline-title">${t.title}</div>
+              <p class="timeline-desc">${t.desc}</p>
+            </div>
+          </div>
+        `).join('')}
       </div>
     </div>
 
-    ${renderPTRecommendation(recommendPTPrograms(selectedGoals, a, exp, injury))}
-
+    <!-- 5. 영양 목표 -->
     <div class="result-section">
-      <h3>칼로리 목표</h3>
+      <h3>일일 영양 목표</h3>
       <div class="calorie-card">
-        <div class="cal-item">
-          <div class="cal-label">기초대사량</div>
-          <div class="cal-value">${d.bmr} kcal</div>
-        </div>
-        <div class="cal-item">
-          <div class="cal-label">활동대사량 (TDEE)</div>
-          <div class="cal-value">${tdee} kcal</div>
-        </div>
         <div class="cal-item">
           <div class="cal-label">목표 칼로리</div>
           <div class="cal-value">${calories.target} kcal</div>
         </div>
         <div class="cal-item">
-          <div class="cal-label">단백질 목표</div>
+          <div class="cal-label">단백질</div>
           <div class="cal-value">${calories.protein}g</div>
+        </div>
+        <div class="cal-item">
+          <div class="cal-label">탄수화물</div>
+          <div class="cal-value">${Math.round(calories.target * 0.45 / 4)}g</div>
+        </div>
+        <div class="cal-item">
+          <div class="cal-label">지방</div>
+          <div class="cal-value">${Math.round(calories.target * 0.25 / 9)}g</div>
         </div>
       </div>
       <div class="info-box" style="margin-top:12px">${calories.note}</div>
     </div>
 
-
-
+    <!-- 6. 지금 시작하지 않으면 -->
     <div class="result-section">
-      <h3>PT 상담 핵심 포인트</h3>
-      <ul class="tip-list">
-        ${buildTips(selectedGoals, a, exp, d).map(t => `<li>${t}</li>`).join('')}
-      </ul>
-    </div>
-
-    <div class="result-section">
-      <h3>운동하지 않을 경우 예상 건강 리스크</h3>
+      <h3>지금 시작하지 않는다면</h3>
       <div class="risk-list">
         ${buildHealthRisks(selectedGoals, a, d).map(r => `
           <div class="risk-item risk-item--${r.level}">
@@ -468,9 +480,175 @@ function renderResult() {
       <div class="alert-box">기재된 특이사항: <strong>${injury}</strong><br>초기 상담 시 동작 평가 후 해당 부위 운동 배제 또는 대체 동작을 계획해주세요.</div>
     </div>
     ` : ''}
+
+    <!-- 클로징 멘트 -->
+    <div class="closing-box">
+      ${buildClosingMessage(d, a, selectedGoals)}
+    </div>
   `;
 
   document.getElementById('result-content').innerHTML = html;
+}
+
+// ──────────────────────────────────────────────
+// 체성분 개인화 내러티브
+// ──────────────────────────────────────────────
+function buildNarrative(d, a) {
+  const isMale = d.gender === 'male';
+  const name = d.name;
+  const sentences = [];
+
+  // 체지방 해석
+  const fatNorm = isMale ? { low: 10, normal: 20, border: 25 } : { low: 18, normal: 28, border: 33 };
+  const fatDiff = d.fatPercent - fatNorm.normal;
+  if (a.fatStatus.label === '비만') {
+    sentences.push(`<strong>${name}님의 체지방률은 ${d.fatPercent}%</strong>로, 동일 연령·성별 정상 범위(${isMale ? '10~20%' : '18~28%'})보다 <em class="em-danger">${fatDiff.toFixed(1)}%p 높습니다.</em> 현재 체지방량 ${d.fat}kg 중 운동과 식이 조절로 줄여야 할 체지방은 약 <strong>${Math.round(d.fat - d.weight * (fatNorm.normal / 100))}kg</strong>입니다.`);
+  } else if (a.fatStatus.label === '경계') {
+    sentences.push(`<strong>${name}님의 체지방률 ${d.fatPercent}%</strong>는 정상 범위 상단에 위치해 있습니다. 지금 관리를 시작하지 않으면 1~2년 내 <em class="em-warn">비만 단계로 진입</em>할 가능성이 높습니다.`);
+  } else if (a.fatStatus.label === '정상') {
+    sentences.push(`<strong>${name}님의 체지방률 ${d.fatPercent}%</strong>는 정상 범위 내에 있습니다. 현재 체성분을 유지하면서 근육 비율을 높이면 더욱 건강한 체형을 만들 수 있습니다.`);
+  } else {
+    sentences.push(`<strong>${name}님의 체지방률 ${d.fatPercent}%</strong>는 다소 낮은 편입니다. 충분한 영양 섭취와 근력 운동으로 건강한 체성분을 만들어가야 합니다.`);
+  }
+
+  // 근육량 해석
+  const muscleNorm = isMale ? { smi_good: 7.0, smi_ok: 5.5 } : { smi_good: 5.5, smi_ok: 4.0 };
+  if (a.muscleStatus.label === '근감소 주의') {
+    const deficit = isMale
+      ? (muscleNorm.smi_ok * Math.pow(d.height / 100, 2) - d.muscle).toFixed(1)
+      : (muscleNorm.smi_ok * Math.pow(d.height / 100, 2) - d.muscle).toFixed(1);
+    sentences.push(`골격근량 <strong>${d.muscle}kg</strong>은 ${name}님의 신장(${d.height}cm) 기준 권장량보다 <em class="em-danger">약 ${deficit}kg 부족</em>한 상태입니다. 근육이 부족하면 기초대사량이 낮아져 같은 양을 먹어도 체지방이 더 쉽게 쌓입니다.`);
+  } else if (a.muscleStatus.label === '근육 보통') {
+    sentences.push(`골격근량 <strong>${d.muscle}kg</strong>은 보통 수준입니다. 현재보다 <strong>2~3kg</strong>의 근육량 증가만으로도 기초대사량이 하루 약 <em class="em-good">60~90kcal 상승</em>하여 체지방 관리가 훨씬 쉬워집니다.`);
+  } else {
+    sentences.push(`골격근량 <strong>${d.muscle}kg</strong>은 양호한 수준입니다. 지금의 근육량을 유지·강화하면 노화로 인한 근감소를 효과적으로 예방할 수 있습니다.`);
+  }
+
+  // BMR 해석
+  if (d.bmr) {
+    const bmrComment = d.bmr < 1400
+      ? `기초대사량 <strong>${d.bmr}kcal</strong>는 낮은 편으로, 근육량 증가를 통해 대사율을 높이는 것이 핵심 과제입니다.`
+      : `기초대사량 <strong>${d.bmr}kcal</strong>는 적정 수준입니다.`;
+    sentences.push(bmrComment);
+  }
+
+  // 복부비만
+  if (a.whrStatus?.label === '복부비만') {
+    sentences.push(`복부지방률(WHR) <strong>${d.whr}</strong>은 기준치를 초과합니다. 내장지방은 피하지방보다 <em class="em-danger">심혈관질환·당뇨 위험을 3배 이상 높이는</em> 가장 위험한 체지방입니다. 집중적인 관리가 필요합니다.`);
+  }
+
+  return `<div class="narrative-sentences">${sentences.map(s => `<p>${s}</p>`).join('')}</div>`;
+}
+
+// ──────────────────────────────────────────────
+// 목표 수치 계산
+// ──────────────────────────────────────────────
+function calcTargets(d, a) {
+  const isMale = d.gender === 'male';
+  const goals = selectedGoals;
+
+  let fatPercentTarget, muscleTarget, weightTarget;
+
+  // 체지방률 목표
+  if (goals.includes('diet') || a.fatStatus.label === '비만') {
+    fatPercentTarget = isMale ? Math.max(15, d.fatPercent - 6) : Math.max(22, d.fatPercent - 6);
+  } else if (a.fatStatus.label === '경계') {
+    fatPercentTarget = isMale ? d.fatPercent - 4 : d.fatPercent - 4;
+  } else {
+    fatPercentTarget = d.fatPercent - 2;
+  }
+
+  // 근육량 목표
+  if (goals.includes('muscle') || a.muscleStatus.label !== '근육 양호') {
+    muscleTarget = +(d.muscle + (isMale ? 3 : 2)).toFixed(1);
+  } else {
+    muscleTarget = +(d.muscle + 1).toFixed(1);
+  }
+
+  // 체중 목표
+  const fatLoss = d.weight * ((d.fatPercent - fatPercentTarget) / 100);
+  const musclGain = muscleTarget - d.muscle;
+  weightTarget = +(d.weight - fatLoss + musclGain).toFixed(1);
+
+  // BMR 목표
+  const bmrTarget = d.bmr ? Math.round(d.bmr + musclGain * 13) : null;
+
+  // 기간
+  const weeks = recommendPTPrograms(goals, a, document.getElementById('experience').value, '').weeks;
+  const months = Math.round(weeks / 4);
+  const period = months >= 3 ? `${months}개월` : `${weeks}주`;
+
+  return { fatPercent: +fatPercentTarget.toFixed(1), muscle: muscleTarget, weight: weightTarget, bmr: bmrTarget, period };
+}
+
+function renderTargetBar(label, current, target, unit, lowerIsBetter) {
+  const improved = lowerIsBetter ? target < current : target > current;
+  const diff = (target - current).toFixed(1);
+  const diffLabel = diff > 0 ? `+${diff}` : `${diff}`;
+  const pct = lowerIsBetter
+    ? Math.min(100, Math.max(10, ((target / current) * 100)))
+    : Math.min(100, Math.max(10, ((current / target) * 100)));
+
+  return `
+    <div class="target-bar-item">
+      <div class="target-bar-header">
+        <span class="target-label">${label}</span>
+        <span class="target-values">
+          <span class="target-current">${current}${unit}</span>
+          <span class="target-arrow">→</span>
+          <span class="target-goal ${improved ? 'target-goal--good' : ''}">${target}${unit}</span>
+          <span class="target-diff ${improved ? 'diff-good' : 'diff-bad'}">(${diffLabel}${unit})</span>
+        </span>
+      </div>
+      <div class="target-bar-track">
+        <div class="target-bar-fill ${lowerIsBetter ? 'fill-danger' : 'fill-good'}" style="width:${pct}%"></div>
+        <div class="target-bar-goal-marker" style="left:${lowerIsBetter ? Math.min(95, (target/current)*100) : Math.min(95, (current/target)*100)}%"></div>
+      </div>
+    </div>
+  `;
+}
+
+// ──────────────────────────────────────────────
+// 예상 변화 타임라인
+// ──────────────────────────────────────────────
+function buildTimeline(d, a, goals, ptRec) {
+  const isDiet    = goals.includes('diet') || a.fatStatus.label === '비만';
+  const isMuscle  = goals.includes('muscle') || a.muscleStatus.label !== '근육 양호';
+  const isPosture = goals.includes('posture');
+  const weeks     = ptRec?.weeks || 16;
+
+  // 4주차
+  const desc4 = [];
+  desc4.push('근신경계 활성화로 운동 수행 능력 향상');
+  if (isDiet) desc4.push(`체중 약 ${(0.4 * 4).toFixed(1)}kg 감량 시작`);
+  if (isMuscle) desc4.push('근육통 감소, 기초 근력 향상');
+
+  // 8주차
+  const desc8 = [];
+  if (isDiet) desc8.push(`체지방 약 ${(d.fatPercent - 2).toFixed(1)}% 수준으로 개선`);
+  if (isMuscle) desc8.push('골격근량 +0.5~1kg 증가, 체형 변화 체감 시작');
+  desc8.push('기초대사량 상승으로 일상 에너지 증가');
+
+  // 12주차
+  const desc12 = [];
+  if (isDiet) desc12.push(`체지방률 ${(d.fatPercent - 4).toFixed(1)}% 수준, 허리둘레 가시적 감소`);
+  if (isMuscle) desc12.push('골격근량 +1.5~2kg, 근육 선명도 향상');
+  if (isPosture) desc12.push('자세 불균형 개선, 만성 통증 완화');
+
+  // 최종
+  const targets = calcTargets(d, a);
+  const descFinal = [
+    `목표 체지방률 ${targets.fatPercent}% 달성`,
+    `골격근량 ${targets.muscle}kg 달성`,
+    `목표 체중 ${targets.weight}kg 도달`,
+  ];
+
+  return [
+    { week: '4주차', title: '신체 적응기', desc: desc4.join(' · ') || '신체 기초 활성화 완료' },
+    { week: '8주차', title: '체성분 변화 시작', desc: desc8.join(' · ') || '체성분 전환 진행 중' },
+    { week: '12주차', title: '가시적 변화', desc: desc12.join(' · ') || '외형 변화 뚜렷하게 체감' },
+    { week: `${weeks}주차`, title: '목표 달성', desc: descFinal.join(' · ') },
+  ];
 }
 
 // ──────────────────────────────────────────────
@@ -828,6 +1006,47 @@ function renderPTRecommendation(p) {
 
 // ──────────────────────────────────────────────
 // 운동 안 할 경우 건강 리스크
+// ──────────────────────────────────────────────
+// 클로징 멘트
+// ──────────────────────────────────────────────
+function buildClosingMessage(d, a, goals) {
+  const name = d.name;
+  const targets = calcTargets(d, a);
+  const ptRec = recommendPTPrograms(goals, a, document.getElementById('experience').value, document.getElementById('injury').value.trim());
+  const isObese    = a.fatStatus.label === '비만' || a.bmiStatus.label === '비만';
+  const isMuscleLow = a.muscleStatus.label === '근감소 주의';
+
+  let headline, body, sub;
+
+  if (isObese && isMuscleLow) {
+    headline = `${name}님, 지금이 가장 빠른 시작입니다.`;
+    body = `체지방 ${d.fatPercent}%에 골격근량 부족이 동시에 확인됐습니다. 이 두 가지는 시간이 지날수록 서로를 악화시킵니다. 근육이 줄면 대사가 떨어지고, 대사가 떨어지면 체지방은 더 빨리 쌓입니다. 지금 시작하면 ${targets.period} 후 체지방 <strong>${targets.fatPercent}%</strong>, 골격근량 <strong>${targets.muscle}kg</strong>이 현실적인 목표입니다.`;
+    sub = `${ptRec.totalSessions}회의 체계적인 프로그램이 ${name}님의 체성분을 바꿔놓을 것입니다.`;
+  } else if (isObese) {
+    headline = `${name}님의 몸은 지금 변화를 기다리고 있습니다.`;
+    body = `체지방률 ${d.fatPercent}%는 숫자가 아니라 현재 몸 상태의 신호입니다. 지금 올바른 방향으로 운동을 시작하면 ${targets.period} 안에 체지방률 <strong>${targets.fatPercent}%</strong>까지 줄일 수 있습니다. 혼자 하는 운동과 전문 PT의 차이는 같은 시간을 쓰고도 결과가 3배 이상 달라진다는 것입니다.`;
+    sub = `오늘 상담이 ${name}님 인생에서 가장 잘한 결정이 될 수 있습니다.`;
+  } else if (isMuscleLow) {
+    headline = `${name}님, 근육은 저절로 만들어지지 않습니다.`;
+    body = `현재 골격근량 ${d.muscle}kg은 기준치보다 부족한 상태입니다. 30대 이후 매년 근육은 자연적으로 감소합니다. 지금 저항 운동을 시작하지 않으면 5년 후 지금보다 훨씬 힘든 몸 상태에서 시작하게 됩니다. ${targets.period} 후 골격근량 <strong>${targets.muscle}kg</strong>을 목표로, 지금 바로 시작하세요.`;
+    sub = `근육 1kg이 늘면 하루 기초대사량이 약 13kcal 오릅니다. 작은 시작이 평생의 체질을 바꿉니다.`;
+  } else if (goals.includes('diet')) {
+    headline = `${name}님이 원하는 몸, 데이터가 가능하다고 말합니다.`;
+    body = `오늘 분석한 체성분 결과를 보면, ${name}님은 ${targets.period}의 집중적인 운동으로 목표 체중 <strong>${targets.weight}kg</strong>에 충분히 도달할 수 있습니다. 막연하게 살을 빼는 것이 아니라, 정확한 수치를 근거로 설계된 프로그램이 그 차이를 만들어냅니다.`;
+    sub = `작심삼일이 반복됐다면, 이제는 전문가와 함께 시스템으로 만들어보세요.`;
+  } else {
+    headline = `${name}님, 건강한 변화는 오늘의 결정에서 시작됩니다.`;
+    body = `오늘 분석한 결과는 ${name}님의 현재를 있는 그대로 보여줍니다. 중요한 것은 지금 이 분석을 바탕으로 행동하느냐입니다. ${targets.period} 후 체성분 목표를 달성한 ${name}님의 모습은, 오늘 이 자리에서 결정이 내려져야 가능합니다.`;
+    sub = `가장 후회되는 운동은 하지 않은 운동입니다.`;
+  }
+
+  return `
+    <div class="closing-headline">${headline}</div>
+    <p class="closing-body">${body}</p>
+    <p class="closing-sub">${sub}</p>
+  `;
+}
+
 // ──────────────────────────────────────────────
 function buildHealthRisks(goals, a, d) {
   const risks = [];
