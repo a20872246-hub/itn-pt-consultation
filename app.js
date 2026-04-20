@@ -101,10 +101,19 @@ async function handleFileUpload(event) {
   } catch (err) {
     status.classList.add('error');
     status.querySelector('.spinner').style.display = 'none';
-    statusText.textContent = '분석 실패: ' + err.message;
     area.querySelector('.upload-icon').textContent = '❌';
     area.querySelector('.upload-sub').textContent   = '다시 시도해주세요';
     area.classList.remove('has-file');
+
+    const isKeyError = /API_KEY_INVALID|API key not valid|invalid.*key/i.test(err.message);
+    if (isKeyError) {
+      localStorage.removeItem('gemini_api_key');
+      updateApiKeyBtn();
+      statusText.textContent = 'API 키가 유효하지 않습니다. 키를 다시 입력해주세요.';
+      setTimeout(() => openApiModal(), 400);
+    } else {
+      statusText.textContent = '분석 실패: ' + err.message;
+    }
   }
 }
 
