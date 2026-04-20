@@ -3,11 +3,66 @@ let inbodyData = {};
 let selectedGoals = [];
 
 // ──────────────────────────────────────────────
+// API 키 관리
+// ──────────────────────────────────────────────
+function getApiKey() {
+  return localStorage.getItem('gemini_api_key') || '';
+}
+
+function openApiModal() {
+  const modal = document.getElementById('api-modal');
+  document.getElementById('api-key-input').value = getApiKey();
+  modal.classList.remove('hidden');
+}
+
+function closeApiModal() {
+  document.getElementById('api-modal').classList.add('hidden');
+}
+
+function saveApiKey() {
+  const key = document.getElementById('api-key-input').value.trim();
+  if (!key) return alert('API 키를 입력해주세요.');
+  localStorage.setItem('gemini_api_key', key);
+  updateApiKeyBtn();
+  closeApiModal();
+}
+
+function updateApiKeyBtn() {
+  const btn = document.getElementById('api-key-btn');
+  if (!btn) return;
+  const hasKey = !!getApiKey();
+  btn.textContent = hasKey ? 'API 키 변경' : 'API 키 설정';
+  btn.classList.toggle('btn-api-key--set', hasKey);
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+  updateApiKeyBtn();
+
+  // 센터명 복원
+  const savedCenter = localStorage.getItem('center_name');
+  if (savedCenter) {
+    document.getElementById('center-name').value = savedCenter;
+    updateCenterDisplay(savedCenter);
+  }
+
+  // 모달 외부 클릭 닫기
+  document.getElementById('api-modal').addEventListener('click', function(e) {
+    if (e.target === this) closeApiModal();
+  });
+});
+
+// ──────────────────────────────────────────────
 // 파일 업로드 & AI 분석
 // ──────────────────────────────────────────────
 async function handleFileUpload(event) {
   const file = event.target.files[0];
   if (!file) return;
+
+  const apiKey = getApiKey();
+  if (!apiKey) {
+    openApiModal();
+    return;
+  }
 
   const area   = document.getElementById('upload-area');
   const status = document.getElementById('upload-status');
@@ -26,7 +81,11 @@ async function handleFileUpload(event) {
     const formData = new FormData();
     formData.append('file', file);
 
-    const res  = await fetch('/api/analyze-inbody', { method: 'POST', body: formData });
+    const res  = await fetch('/api/analyze-inbody', {
+      method: 'POST',
+      headers: { 'x-api-key': apiKey },
+      body: formData,
+    });
     const json = await res.json();
 
     if (!res.ok || !json.success) throw new Error(json.error || '분석 실패');
@@ -35,14 +94,14 @@ async function handleFileUpload(event) {
 
     status.classList.add('success');
     status.querySelector('.spinner').style.display = 'none';
-    statusText.textContent = '✅ 자동 입력 완료! 값을 확인하고 수정해주세요.';
+    statusText.textContent = '자동 입력 완료! 값을 확인하고 수정해주세요.';
     area.querySelector('.upload-icon').textContent = '✅';
     area.querySelector('.upload-sub').textContent   = '분석 완료';
 
   } catch (err) {
     status.classList.add('error');
     status.querySelector('.spinner').style.display = 'none';
-    statusText.textContent = '❌ 분석 실패: ' + err.message;
+    statusText.textContent = '분석 실패: ' + err.message;
     area.querySelector('.upload-icon').textContent = '❌';
     area.querySelector('.upload-sub').textContent   = '다시 시도해주세요';
     area.classList.remove('has-file');
@@ -876,6 +935,7 @@ function updateCenterDisplay(val) {
   const el = document.getElementById('center-display');
   el.textContent = val.trim();
   el.style.display = val.trim() ? 'block' : 'none';
+  localStorage.setItem('center_name', val.trim());
 }
 
 function resetAll() {

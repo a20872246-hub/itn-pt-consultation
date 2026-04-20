@@ -67,6 +67,79 @@ header .subtitle {
 }
 
 
+/* API 키 버튼 */
+.btn-api-key {
+  margin-top: 12px;
+  padding: 7px 18px;
+  border-radius: 8px;
+  font-size: 0.82rem;
+  font-weight: 600;
+  cursor: pointer;
+  border: 1.5px solid #c7d2fe;
+  background: #f5f3ff;
+  color: #4f46e5;
+  transition: all 0.2s;
+}
+
+.btn-api-key:hover { background: #ede9fe; }
+
+.btn-api-key--set {
+  border-color: #bbf7d0;
+  background: #f0fdf4;
+  color: #15803d;
+}
+
+/* 모달 */
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.45);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: 20px;
+}
+
+.modal-overlay.hidden { display: none; }
+
+.modal {
+  background: white;
+  border-radius: 16px;
+  padding: 32px;
+  width: 100%;
+  max-width: 460px;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.2);
+}
+
+.modal h2 {
+  font-size: 1.2rem;
+  font-weight: 700;
+  margin-bottom: 10px;
+  color: #1a1a2e;
+}
+
+.modal-desc {
+  font-size: 0.85rem;
+  color: #666;
+  line-height: 1.6;
+  margin-bottom: 20px;
+}
+
+.modal-link {
+  font-size: 0.83rem;
+  color: #888;
+  margin: 10px 0 20px;
+}
+
+.modal-link a {
+  color: #4f46e5;
+  text-decoration: none;
+  font-weight: 600;
+}
+
+.modal-link a:hover { text-decoration: underline; }
+
 /* 진행 단계 */
 .progress-bar {
   display: flex;
