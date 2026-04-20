@@ -1,0 +1,58 @@
+<svg width="1200" height="630" viewBox="0 0 1200 630" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#1a1a2e"/>
+      <stop offset="100%" style="stop-color:#2d2b55"/>
+    </linearGradient>
+    <linearGradient id="accent" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" style="stop-color:#4f46e5"/>
+      <stop offset="100%" style="stop-color:#7c3aed"/>
+    </linearGradient>
+  </defs>
+
+  <!-- 배경 -->
+  <rect width="1200" height="630" fill="url(#bg)"/>
+
+  <!-- 우상단 장식 원 -->
+  <circle cx="1050" cy="120" r="200" fill="#4f46e5" opacity="0.08"/>
+  <circle cx="1100" cy="60" r="120" fill="#7c3aed" opacity="0.1"/>
+
+  <!-- 좌하단 장식 원 -->
+  <circle cx="100" cy="540" r="160" fill="#4f46e5" opacity="0.07"/>
+
+  <!-- 상단 강조 바 -->
+  <rect x="80" y="80" width="6" height="80" rx="3" fill="url(#accent)"/>
+
+  <!-- 서브 타이틀 -->
+  <text x="106" y="120" font-family="'Apple SD Gothic Neo', 'Noto Sans KR', sans-serif" font-size="28" font-weight="500" fill="#a5b4fc" letter-spacing="2">ITN FITNESS</text>
+
+  <!-- 메인 타이틀 -->
+  <text x="80" y="260" font-family="'Apple SD Gothic Neo', 'Noto Sans KR', sans-serif" font-size="88" font-weight="800" fill="#ffffff">상담 프로그램</text>
+
+  <!-- 구분선 -->
+  <rect x="80" y="300" width="480" height="4" rx="2" fill="url(#accent)"/>
+
+  <!-- 설명 -->
+  <text x="80" y="360" font-family="'Apple SD Gothic Neo', 'Noto Sans KR', sans-serif" font-size="32" font-weight="400" fill="#c7d2fe">인바디 결과 기반 근거기반 맞춤 운동 프로그램</text>
+
+  <!-- 태그들 -->
+  <rect x="80" y="410" width="160" height="44" rx="22" fill="#4f46e5" opacity="0.7"/>
+  <text x="160" y="438" font-family="'Apple SD Gothic Neo', 'Noto Sans KR', sans-serif" font-size="20" font-weight="600" fill="#ffffff" text-anchor="middle">필라테스 PT</text>
+
+  <rect x="256" y="410" width="170" height="44" rx="22" fill="#7c3aed" opacity="0.7"/>
+  <text x="341" y="438" font-family="'Apple SD Gothic Neo', 'Noto Sans KR', sans-serif" font-size="20" font-weight="600" fill="#ffffff" text-anchor="middle">트레이닝 PT</text>
+
+  <rect x="442" y="410" width="150" height="44" rx="22" fill="#6d28d9" opacity="0.7"/>
+  <text x="517" y="438" font-family="'Apple SD Gothic Neo', 'Noto Sans KR', sans-serif" font-size="20" font-weight="600" fill="#ffffff" text-anchor="middle">스페셜 PT</text>
+
+  <!-- 우측 카드 -->
+  <rect x="760" y="200" width="360" height="200" rx="20" fill="#ffffff" opacity="0.05"/>
+  <rect x="760" y="200" width="360" height="200" rx="20" fill="none" stroke="#4f46e5" stroke-width="1.5" opacity="0.4"/>
+
+  <text x="940" y="260" font-family="'Apple SD Gothic Neo', 'Noto Sans KR', sans-serif" font-size="22" fill="#a5b4fc" text-anchor="middle">인바디 분석</text>
+  <text x="940" y="300" font-family="'Apple SD Gothic Neo', 'Noto Sans KR', sans-serif" font-size="36" font-weight="700" fill="#ffffff" text-anchor="middle">AI 자동 입력</text>
+  <text x="940" y="345" font-family="'Apple SD Gothic Neo', 'Noto Sans KR', sans-serif" font-size="20" fill="#818cf8" text-anchor="middle">결과지 업로드 → 자동 분석</text>
+
+  <!-- 하단 -->
+  <text x="80" y="590" font-family="'Apple SD Gothic Neo', 'Noto Sans KR', sans-serif" font-size="22" fill="#6366f1" opacity="0.8">근거기반 맞춤 운동 프로그램을 확인하세요.</text>
+</svg>
