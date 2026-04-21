@@ -390,6 +390,7 @@ function renderResult() {
   const exp = document.getElementById('experience').value;
   const freq = +document.getElementById('frequency').value;
   const injury = document.getElementById('injury').value.trim();
+  const medicalInfo = collectMedicalInfo();
   const genderLabel = d.gender === 'male' ? '남성' : '여성';
   const expLabel = { none: '운동 경험 없음', beginner: '초보', intermediate: '중급', advanced: '고급' }[exp];
   const tdee = Math.round(d.bmr * activityMultiplier(freq));
@@ -483,10 +484,10 @@ function renderResult() {
       </div>
     </div>
 
-    ${injury ? `
+    ${(medicalInfo.diseases.length || medicalInfo.medication || injury) ? `
     <div class="result-section">
-      <h3>특이사항 및 주의</h3>
-      <div class="alert-box">기재된 특이사항: <strong>${injury}</strong><br>초기 상담 시 동작 평가 후 해당 부위 운동 배제 또는 대체 동작을 계획해주세요.</div>
+      <h3>건강 정보 기반 맞춤 분석</h3>
+      ${renderMedicalAnalysis(d, a, medicalInfo, injury)}
     </div>
     ` : ''}
 
@@ -1159,6 +1160,223 @@ function printResult() {
   document.title   = original;
 }
 
+// ──────────────────────────────────────────────
+// 건강 정보 수집 & 질병 토글
+// ──────────────────────────────────────────────
+function toggleDisease(btn) {
+  btn.classList.toggle('active');
+}
+
+function collectMedicalInfo() {
+  const diseases = Array.from(document.querySelectorAll('.disease-tag.active'))
+    .map(b => b.dataset.disease);
+  const extra = document.getElementById('disease-extra')?.value.trim();
+  if (extra) diseases.push(...extra.split(/[,，、\s]+/).filter(Boolean));
+  const medication = document.getElementById('medication')?.value.trim() || '';
+  return { diseases, medication };
+}
+
+// ──────────────────────────────────────────────
+// 질병-인바디 연계 분석
+// ──────────────────────────────────────────────
+const DISEASE_DB = {
+  고혈압: {
+    inbodyLinks: [
+      { check: (d, a) => a.whrStatus?.label === '복부비만', text: '복부지방(WHR {whr})이 기준 초과 — 내장지방은 혈관 주변에 축적되어 혈압을 직접 높입니다.' },
+      { check: (d, a) => a.bmiStatus.label === '비만' || a.bmiStatus.label === '고도비만', text: '체중 과다(BMI {bmi})로 심장이 더 많은 혈액을 내보내야 해 혈압이 만성적으로 높아집니다.' },
+      { check: (d, a) => a.fatStatus.label === '비만', text: '체지방률 {fatPercent}%의 과잉 지방조직이 혈관 염증을 유발해 혈압 조절을 어렵게 합니다.' },
+    ],
+    exerciseCaution: ['고강도 인터벌(HIIT) 초기에는 혈압 스파이크 위험 — 중저강도부터 시작', '운동 전후 혈압 측정 권장', '혈압약 복용 중이라면 운동 중 어지럼증 주의'],
+    noExerciseRisk: '운동 없이 방치 시 수축기혈압이 매년 1~2mmHg씩 상승합니다. 10년 후 뇌졸중 위험 40%, 심근경색 위험 25% 증가로 이어질 수 있습니다.',
+    exerciseBenefit: '규칙적인 유산소 운동만으로 수축기 혈압을 5~8mmHg 낮출 수 있으며, 이는 혈압약 한 알 효과와 동일합니다.',
+  },
+  당뇨: {
+    inbodyLinks: [
+      { check: (d, a) => a.muscleStatus.label !== '근육 양호', text: '골격근량 {muscle}kg 부족 — 근육은 포도당을 소비하는 가장 큰 기관으로, 근육이 적을수록 혈당 조절이 어렵습니다.' },
+      { check: (d, a) => a.fatStatus.label === '비만' || a.fatStatus.label === '경계', text: '체지방률 {fatPercent}%의 지방세포가 인슐린 수용체를 둔감하게 만들어 인슐린 저항성을 높입니다.' },
+      { check: (d, a) => a.whrStatus?.label === '복부비만', text: '복부 내장지방이 간으로 직접 유입되어 간 인슐린 저항성을 유발합니다.' },
+    ],
+    exerciseCaution: ['저혈당 방지 위해 운동 전 혈당 확인(100mg/dL 이하면 간식 섭취 후 운동)', '인슐린/당뇨약 복용 중이라면 운동 중 혈당 강하 주의', '발 말초신경 손상 가능성 — 발 상태 확인 후 운동화 착용'],
+    noExerciseRisk: '운동하지 않으면 인슐린 저항성이 악화되어 합병증(신장병·망막병·말초신경병) 진행이 가속됩니다. 당뇨 합병증의 60%는 운동 부족이 주요 원인입니다.',
+    exerciseBenefit: '저항 운동으로 근육량을 늘리면 근육이 포도당을 흡수하는 능력이 향상되어 당화혈색소(HbA1c)를 0.5~1.0% 낮출 수 있습니다.',
+  },
+  고지혈증: {
+    inbodyLinks: [
+      { check: (d, a) => a.fatStatus.label === '비만' || a.fatStatus.label === '경계', text: '체지방률 {fatPercent}% — 과잉 지방이 간에서 중성지방 합성을 증가시키고 LDL 콜레스테롤을 높입니다.' },
+      { check: (d, a) => a.whrStatus?.label === '복부비만', text: '복부 내장지방이 직접 간으로 유입되어 중성지방 수치를 높이는 주요 원인입니다.' },
+      { check: (d, a) => a.muscleStatus.label !== '근육 양호', text: '근육량 부족 — 근육은 지방산을 연소시키는 주요 기관으로, 근육이 적으면 혈중 지방이 잘 처리되지 않습니다.' },
+    ],
+    exerciseCaution: ['스타틴 계열 약 복용 중이라면 근육통(횡문근융해) 주의 — 근육통 심해지면 즉시 보고', '유산소 운동이 LDL 감소에 특히 효과적'],
+    noExerciseRisk: '혈중 LDL·중성지방 수치가 지속 상승하면 동맥 내벽에 플라크가 쌓여 관상동맥질환·뇌졸중 위험이 높아집니다.',
+    exerciseBenefit: '유산소 운동은 HDL(좋은 콜레스테롤)을 5~10% 높이고 중성지방을 20~30% 낮춥니다.',
+  },
+  지방간: {
+    inbodyLinks: [
+      { check: (d, a) => a.whrStatus?.label === '복부비만', text: '복부지방률 {whr} — 내장지방의 지방산이 문맥을 통해 간으로 직접 유입되어 지방간의 가장 직접적 원인이 됩니다.' },
+      { check: (d, a) => a.fatStatus.label === '비만' || a.fatStatus.label === '경계', text: '체지방률 {fatPercent}%의 과잉 체지방이 간의 지방 대사 부하를 높여 지방간을 악화시킵니다.' },
+    ],
+    exerciseCaution: ['고강도 운동보다 중강도 유산소 운동이 간지방 감소에 효과적', '금주 병행 필수'],
+    noExerciseRisk: '단순 지방간이 방치되면 비알코올성 지방간염(NASH) → 간섬유화 → 간경변으로 진행될 수 있습니다.',
+    exerciseBenefit: '주 150분 이상 유산소 운동만으로 간지방이 평균 30~40% 감소하는 것이 임상적으로 확인되었습니다.',
+  },
+  골다공증: {
+    inbodyLinks: [
+      { check: (d, a) => a.muscleStatus.label !== '근육 양호', text: '골격근량 {muscle}kg 부족 — 근육과 뼈는 함께 발달하며, 근육이 약하면 뼈에 가해지는 자극이 줄어 골밀도가 저하됩니다.' },
+      { check: (d, a) => a.bmiStatus.label === '저체중' || a.fatPercent < 18, text: '저체중/저체지방 상태는 에스트로겐 분비 감소로 이어져 골밀도 저하를 가속합니다.' },
+    ],
+    exerciseCaution: ['충격이 큰 운동(점프, 고강도 달리기)은 골절 위험 — 수영, 자전거보다 걷기·저항 운동 권장', '낙상 예방을 위한 균형 훈련 병행'],
+    noExerciseRisk: '운동 없이 방치 시 매년 1~3%씩 골밀도가 감소합니다. 골절 후 회복 지연 및 합병증으로 이어질 수 있습니다.',
+    exerciseBenefit: '체중 부하 저항 운동은 골세포를 자극해 골밀도를 유지·증가시키는 가장 효과적인 비약물 치료입니다.',
+  },
+  관절염: {
+    inbodyLinks: [
+      { check: (d, a) => a.bmiStatus.label === '과체중' || a.bmiStatus.label === '비만' || a.bmiStatus.label === '고도비만', text: '체중 {weight}kg — 체중 1kg 증가 시 무릎 관절에 가해지는 부하는 약 4kg 증가합니다. 현재 정상 체중보다 더 나가는 무게만큼 관절 부담이 큽니다.' },
+      { check: (d, a) => a.muscleStatus.label !== '근육 양호', text: '관절 주변 근육량 부족 — 근육이 관절을 보호하는 역할을 하는데, 근육이 약하면 연골 마모가 빨라집니다.' },
+    ],
+    exerciseCaution: ['달리기·점프 등 충격 운동 제한', '수중 운동·사이클·저항 운동으로 관절 부담 최소화', '통증이 있는 날은 ROM 운동(가동범위 운동)으로 대체'],
+    noExerciseRisk: '운동 없이 근육이 위축되면 관절 불안정성이 증가하고 연골 마모가 가속됩니다. 결국 관절 치환술이 필요한 상태까지 진행될 수 있습니다.',
+    exerciseBenefit: '규칙적인 저충격 운동과 근력 강화는 관절 통증을 40~50% 감소시키고 관절 기능을 유의미하게 개선합니다.',
+  },
+  갑상선질환: {
+    inbodyLinks: [
+      { check: (d, a) => true, text: '갑상선 기능 저하 시 기초대사량({bmr}kcal)이 더 낮을 수 있으며, 체중 관리가 더 어려운 상태일 수 있습니다.' },
+      { check: (d, a) => a.fatStatus.label === '비만' || a.fatStatus.label === '경계', text: '갑상선 기능 저하와 체지방 증가({fatPercent}%)는 상호 악화 관계입니다.' },
+    ],
+    exerciseCaution: ['갑상선 항진증이라면 고강도 운동 시 심박수 과도 상승 주의', '갑상선 기능 저하라면 피로감이 크므로 운동 강도를 서서히 높일 것', '약 복용 중이라면 운동 전 1~2시간 후 약 효과가 안정될 때 운동 권장'],
+    noExerciseRisk: '갑상선 기능 저하 환자가 운동하지 않으면 근감소가 가속되고 대사 저하로 인한 체중 증가가 지속됩니다.',
+    exerciseBenefit: '저항 운동은 갑상선 기능 저하 환자의 기초대사율 향상과 체중 조절에 가장 효과적인 방법입니다.',
+  },
+  수면무호흡: {
+    inbodyLinks: [
+      { check: (d, a) => a.bmiStatus.label === '비만' || a.bmiStatus.label === '고도비만' || a.bmiStatus.label === '과체중', text: '체중 과다(BMI {bmi}) — 목 주변 지방 축적이 기도를 좁혀 수면 중 호흡 장애를 유발합니다. 체중의 10% 감량만으로 수면무호흡 증상이 50% 이상 감소합니다.' },
+      { check: (d, a) => a.whrStatus?.label === '복부비만', text: '복부비만이 횡격막을 압박해 누운 자세에서 호흡을 더 어렵게 만듭니다.' },
+    ],
+    exerciseCaution: ['수면 부족으로 코티솔 수치가 높아져 있어 체지방 감소가 더 어려울 수 있음', '운동 직전 CPAP 착용 여부 확인', '피로감이 높은 날 과도한 운동은 면역 저하로 이어질 수 있음'],
+    noExerciseRisk: '수면무호흡이 지속되면 만성 저산소증으로 고혈압·심방세동·인지기능 저하가 진행됩니다. 체중 증가가 계속되면 증상이 더욱 악화됩니다.',
+    exerciseBenefit: '체중 감량은 수면무호흡 치료에서 CPAP 다음으로 효과적인 방법입니다. 운동으로 체중 5~10% 감량 시 AHI(무호흡 지수) 현저히 감소합니다.',
+  },
+  심장질환: {
+    inbodyLinks: [
+      { check: (d, a) => a.fatStatus.label === '비만' || a.whrStatus?.label === '복부비만', text: '체지방/복부지방이 심장 주변에도 축적되어 심장 기능에 직접적 부담을 줍니다.' },
+      { check: (d, a) => a.bmiStatus.label === '비만' || a.bmiStatus.label === '고도비만', text: '체중 과다로 인해 심장이 더 많은 혈액을 공급해야 하며, 이는 심장 부담을 만성화합니다.' },
+    ],
+    exerciseCaution: ['반드시 주치의와 운동 강도 협의 후 시작', '심박수 목표 범위(최대 심박수의 50~70%) 내에서 운동', '흉통·호흡곤란·어지럼증 시 즉시 중단'],
+    noExerciseRisk: '심장 재활 운동 없이 방치 시 심장 기능이 저하되고 재발 위험이 높아집니다. 운동은 심장질환 2차 예방의 핵심 치료입니다.',
+    exerciseBenefit: '심장 재활 운동은 심혈관 사망률을 20~25% 낮추고 삶의 질을 크게 향상시킵니다.',
+  },
+};
+
+function renderMedicalAnalysis(d, a, medicalInfo, injury) {
+  const { diseases, medication } = medicalInfo;
+  const parts = [];
+
+  // 부상 섹션
+  if (injury) {
+    parts.push(`
+      <div class="medical-block medical-block--injury">
+        <div class="medical-block-title">부상 / 불편 부위</div>
+        <p class="medical-text">${injury}</p>
+        <p class="medical-caution">초기 상담 시 정밀 동작 평가 후 해당 부위 운동 배제 또는 대체 동작을 계획하세요.</p>
+      </div>
+    `);
+  }
+
+  // 약 섹션
+  if (medication) {
+    const medCautions = buildMedicationCautions(medication);
+    parts.push(`
+      <div class="medical-block medical-block--med">
+        <div class="medical-block-title">복용 중인 약 및 운동 주의사항</div>
+        <p class="medical-text" style="margin-bottom:10px">${medication}</p>
+        ${medCautions.length ? `<ul class="medical-caution-list">${medCautions.map(c => `<li>${c}</li>`).join('')}</ul>` : ''}
+      </div>
+    `);
+  }
+
+  // 질병별 분석
+  diseases.forEach(disease => {
+    const db = DISEASE_DB[disease];
+    if (!db) {
+      // DB에 없는 질병은 간단하게
+      parts.push(`
+        <div class="medical-block medical-block--disease">
+          <div class="medical-block-title">${disease}</div>
+          <p class="medical-text">트레이너는 운동 처방 전 해당 질환 주치의와 운동 가능 여부 및 강도를 반드시 협의해주세요.</p>
+        </div>
+      `);
+      return;
+    }
+
+    // 인바디 연계 원인 분석
+    const links = db.inbodyLinks
+      .filter(l => l.check(d, a))
+      .map(l => l.text
+        .replace('{fatPercent}', d.fatPercent)
+        .replace('{muscle}', d.muscle)
+        .replace('{weight}', d.weight)
+        .replace('{bmi}', d.bmi)
+        .replace('{bmr}', d.bmr)
+        .replace('{whr}', d.whr)
+      );
+
+    parts.push(`
+      <div class="medical-block medical-block--disease">
+        <div class="medical-block-title">${disease}</div>
+
+        ${links.length ? `
+        <div class="medical-sub">인바디 결과와의 연관성</div>
+        <ul class="medical-link-list">
+          ${links.map(l => `<li>${l}</li>`).join('')}
+        </ul>` : ''}
+
+        <div class="medical-sub">운동 시 주의사항</div>
+        <ul class="medical-caution-list">
+          ${db.exerciseCaution.map(c => `<li>${c}</li>`).join('')}
+        </ul>
+
+        <div class="medical-benefit-row">
+          <div class="medical-benefit">
+            <span class="benefit-label">운동 효과</span>
+            <p>${db.exerciseBenefit}</p>
+          </div>
+          <div class="medical-risk-inline">
+            <span class="risk-label-inline">지금 안 하면</span>
+            <p>${db.noExerciseRisk}</p>
+          </div>
+        </div>
+      </div>
+    `);
+  });
+
+  return parts.join('');
+}
+
+function buildMedicationCautions(medication) {
+  const cautions = [];
+  const med = medication.toLowerCase();
+
+  if (/혈압|암로디핀|아테놀올|losartan|안지오텐신|베타차단/.test(med))
+    cautions.push('혈압약: 운동 중 혈압 변화가 완만해질 수 있음. 운동 후 갑작스러운 자세 변화 주의(기립성 저혈압)');
+  if (/당뇨|메트포르민|인슐린|글루코파지|sulfonylurea|glipizide/.test(med))
+    cautions.push('당뇨약/인슐린: 운동 중·후 저혈당 위험. 운동 전 혈당 체크, 간식 준비 필수');
+  if (/스타틴|콜레스테롤|로수바|아토르바|lipitor|crestor/.test(med))
+    cautions.push('스타틴 계열: 근육통·근력 약화 부작용 가능. 운동 중 비정상적 근육통 발생 시 즉시 보고');
+  if (/스테로이드|프레드니솔론|덱사메타존|cortisone/.test(med))
+    cautions.push('스테로이드: 장기 복용 시 근감소·골다공증 촉진. 저항 운동과 칼슘·비타민D 섭취 병행 권장');
+  if (/항응고|와파린|아스피린|혈전|warfarin|xarelto/.test(med))
+    cautions.push('항응고제: 충격·타박상 위험이 있는 운동 주의. 출혈 시 지혈이 느림');
+  if (/갑상선|레보티록신|synthroid|levothyroxine/.test(med))
+    cautions.push('갑상선약: 복용 후 30~60분은 음식·운동 삼가. 약 흡수 방해 가능성');
+  if (/이뇨제|furosemide|hydrochlorothiazide/.test(med))
+    cautions.push('이뇨제: 전해질(칼륨·나트륨) 손실 주의. 운동 중 탈수·근경련 위험 증가');
+
+  if (!cautions.length)
+    cautions.push('복용 중인 약과 운동의 상호작용을 주치의에게 확인한 후 프로그램을 시작하세요.');
+
+  return cautions;
+}
+
+// ──────────────────────────────────────────────
 function updateCenterDisplay(val) {
   const el = document.getElementById('center-display');
   el.textContent = val.trim();

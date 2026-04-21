@@ -204,9 +204,34 @@
         </select>
       </div>
 
-      <div class="form-group">
-        <label>특이사항 / 부상 이력</label>
-        <textarea id="injury" placeholder="예: 허리디스크, 무릎 통증, 어깨 충돌증후군 등" rows="3"></textarea>
+      <div class="medical-section">
+        <div class="medical-section-title">건강 정보 (선택)</div>
+
+        <div class="form-group">
+          <label>부상 / 불편 부위</label>
+          <textarea id="injury" placeholder="예: 허리디스크, 무릎 통증, 어깨 충돌증후군 등" rows="2"></textarea>
+        </div>
+
+        <div class="form-group">
+          <label>진단받은 질병</label>
+          <div class="disease-tag-row" id="disease-tag-row">
+            <button type="button" class="disease-tag" onclick="toggleDisease(this)" data-disease="고혈압">고혈압</button>
+            <button type="button" class="disease-tag" onclick="toggleDisease(this)" data-disease="당뇨">당뇨</button>
+            <button type="button" class="disease-tag" onclick="toggleDisease(this)" data-disease="고지혈증">고지혈증</button>
+            <button type="button" class="disease-tag" onclick="toggleDisease(this)" data-disease="지방간">지방간</button>
+            <button type="button" class="disease-tag" onclick="toggleDisease(this)" data-disease="골다공증">골다공증</button>
+            <button type="button" class="disease-tag" onclick="toggleDisease(this)" data-disease="관절염">관절염</button>
+            <button type="button" class="disease-tag" onclick="toggleDisease(this)" data-disease="갑상선질환">갑상선질환</button>
+            <button type="button" class="disease-tag" onclick="toggleDisease(this)" data-disease="수면무호흡">수면무호흡</button>
+            <button type="button" class="disease-tag" onclick="toggleDisease(this)" data-disease="심장질환">심장질환</button>
+          </div>
+          <input type="text" id="disease-extra" placeholder="기타 진단명 직접 입력" style="margin-top:8px" />
+        </div>
+
+        <div class="form-group">
+          <label>복용 중인 약</label>
+          <textarea id="medication" placeholder="예: 혈압약(암로디핀), 메트포르민, 스타틴 계열 등&#10;약 이름을 모르면 '혈압약', '당뇨약' 등으로 적어도 됩니다." rows="2"></textarea>
+        </div>
       </div>
 
       <div class="btn-row">
