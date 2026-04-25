@@ -644,6 +644,10 @@ function renderNewPTCard(p) {
               <span class="rpt-pt-sess-val">주 ${p.sessionsPerWeek}회 × ${p.weeks}주</span>
             </div>
             <div class="rpt-pt-sess-block">
+              <span class="rpt-pt-sess-label">총 추천 횟수</span>
+              <span class="rpt-pt-sess-val rpt-pt-total">${p.totalSessions}회</span>
+            </div>
+            <div class="rpt-pt-sess-block rpt-pt-sess-block--full">
               <span class="rpt-pt-sess-label">단계별 계획</span>
               <span class="rpt-pt-sess-val">${p.phaseNote}</span>
             </div>

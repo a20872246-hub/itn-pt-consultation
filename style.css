@@ -1551,6 +1551,16 @@ header .subtitle {
   font-weight: 600;
 }
 
+.rpt-pt-total {
+  font-size: 1rem;
+  color: #1a3d2a;
+  font-weight: 800;
+}
+
+.rpt-pt-sess-block--full {
+  width: 100%;
+}
+
 /* 수평 타임라인 */
 .rpt-timeline-h {
   display: flex;
