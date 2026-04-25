@@ -382,7 +382,7 @@ function toggleGoal(card) {
 }
 
 // ──────────────────────────────────────────────
-// STEP 3: 결과 렌더
+// STEP 3: 결과 렌더 (리포트 스타일)
 // ──────────────────────────────────────────────
 function renderResult() {
   const d = inbodyData;
@@ -391,113 +391,281 @@ function renderResult() {
   const freq = +document.getElementById('frequency').value;
   const injury = document.getElementById('injury').value.trim();
   const medicalInfo = collectMedicalInfo();
-  const genderLabel = d.gender === 'male' ? '남성' : '여성';
-  const expLabel = { none: '운동 경험 없음', beginner: '초보', intermediate: '중급', advanced: '고급' }[exp];
   const tdee = Math.round(d.bmr * activityMultiplier(freq));
   const calories = calcCalorieTarget(tdee);
   const ptRec = recommendPTPrograms(selectedGoals, a, exp, injury);
   const targets = calcTargets(d, a);
+  const risks = buildHealthRisks(selectedGoals, a, d);
+  const today = new Date();
+  const dateStr = `${today.getFullYear()}.${String(today.getMonth()+1).padStart(2,'0')}.${String(today.getDate()).padStart(2,'0')}`;
 
   const html = `
     <!-- 헤더 -->
-    <div class="result-header">
-      <div>
-        <div class="name">${d.name} 회원님의 체성분 분석 보고서</div>
-        <div class="meta">${d.age}세 · ${genderLabel} · ${expLabel} · 주 ${freq}회 운동 가능</div>
+    <div class="rpt-header">
+      <div class="rpt-header-left">
+        <div class="rpt-name">${d.name}님의 맞춤<br>운동 분석 보고서</div>
+        <div class="rpt-subtitle">과학적 분석으로 더 건강한 내일을 설계하세요.</div>
+        <div class="rpt-date">📅 분석일 ${dateStr}</div>
+      </div>
+      <div class="rpt-achieve-badge">
+        <div class="rpt-achieve-icon">🎯</div>
+        <div class="rpt-achieve-text">
+          <div class="rpt-achieve-title">목표 달성 가능!</div>
+          <div class="rpt-achieve-desc">꾸준한 운동으로 ${targets.period} 후<br>목표 달성이 가능합니다.</div>
+        </div>
       </div>
     </div>
 
-    <!-- 1. 체성분 진단 내러티브 -->
-    <div class="result-section">
-      <h3>체성분 진단</h3>
-      <div class="narrative-box">
-        ${buildNarrative(d, a)}
-      </div>
+    <!-- 주요 지표 4개 -->
+    <div class="rpt-metrics">
+      ${renderMetricCard('체지방률', d.fatPercent, targets.fatPercent, '%', true, '⊗')}
+      ${renderMetricCard('골격근량', d.muscle, targets.muscle, 'kg', false, '💪')}
+      ${renderMetricCard('체중', d.weight, targets.weight, 'kg', true, '⊟')}
+      ${d.bmr ? renderMetricCard('기초대사량', d.bmr, targets.bmr, 'kcal', false, '🔥') : ''}
     </div>
 
-    <!-- 2. 현재 → 목표 수치 시각화 -->
-    <div class="result-section">
-      <h3>현재 체성분 vs 목표</h3>
-      <div class="target-grid">
-        ${renderTargetBar('체지방률', d.fatPercent, targets.fatPercent, '%', true)}
-        ${renderTargetBar('골격근량', d.muscle, targets.muscle, 'kg', false)}
-        ${renderTargetBar('체중', d.weight, targets.weight, 'kg', true)}
-        ${d.bmr ? renderTargetBar('기초대사량', d.bmr, targets.bmr, 'kcal', false) : ''}
+    <!-- 체성분 비교 + 건강 위험도 -->
+    <div class="rpt-two-col">
+      <div class="rpt-card">
+        <div class="rpt-card-title">현재 체성분 vs 목표</div>
+        <div class="rpt-legend-row">
+          <span class="rpt-legend"><span class="rpt-leg-dot rpt-leg-dot--cur"></span>현재</span>
+          <span class="rpt-legend"><span class="rpt-leg-dot rpt-leg-dot--tgt"></span>목표</span>
+        </div>
+        ${renderNewTargetBar('체지방률', d.fatPercent, targets.fatPercent, '%', true)}
+        ${renderNewTargetBar('골격근량', d.muscle, targets.muscle, 'kg', false)}
+        ${renderNewTargetBar('체중', d.weight, targets.weight, 'kg', true)}
+        ${d.bmr ? renderNewTargetBar('기초대사량', d.bmr, targets.bmr, 'kcal', false) : ''}
       </div>
-      <p class="target-note">${targets.period}을 꾸준히 운동했을 때 도달 가능한 목표 수치입니다.</p>
-    </div>
-
-    <!-- 3. PT 프로그램 추천 -->
-    ${renderPTRecommendation(ptRec)}
-
-    <!-- 4. 예상 변화 타임라인 -->
-    <div class="result-section">
-      <h3>프로그램별 예상 변화</h3>
-      <div class="timeline">
-        ${buildTimeline(d, a, selectedGoals, ptRec).map(t => `
-          <div class="timeline-item">
-            <div class="timeline-dot"></div>
-            <div class="timeline-content">
-              <div class="timeline-week">${t.week}</div>
-              <div class="timeline-title">${t.title}</div>
-              <p class="timeline-desc">${t.desc}</p>
+      <div class="rpt-card">
+        <div class="rpt-card-title">건강 위험도</div>
+        ${renderRiskGauge(risks)}
+        <div class="rpt-risk-items">
+          ${risks.slice(0, 4).map(r => `
+            <div class="rpt-risk-row">
+              <span class="rpt-risk-icon">${r.level === 'high' ? '❤️' : r.level === 'mid' ? '🔸' : '💬'}</span>
+              <span class="rpt-risk-name">${r.label}</span>
+              <span class="rpt-risk-badge rpt-risk-badge--${r.level}">${r.level === 'high' ? '위험' : r.level === 'mid' ? '주의' : '관찰'}</span>
             </div>
+          `).join('')}
+        </div>
+        <p class="rpt-risk-note">지속적인 관리가 필요합니다.</p>
+      </div>
+    </div>
+
+    <!-- PT 프로그램 추천 -->
+    ${renderNewPTCard(ptRec)}
+
+    <!-- 타임라인 -->
+    <div class="rpt-card rpt-card--mb">
+      <div class="rpt-card-title">프로그램 로드맵 (${ptRec.weeks}주)</div>
+      <div class="rpt-timeline-h">
+        ${buildTimeline(d, a, selectedGoals, ptRec).map((t, i, arr) => `
+          <div class="rpt-tl-item">
+            <div class="rpt-tl-top">
+              <div class="rpt-tl-icon">${['🏃','📊','✨','🏆'][i]}</div>
+              ${i < arr.length - 1 ? '<div class="rpt-tl-line"></div>' : ''}
+            </div>
+            <div class="rpt-tl-week">${t.week}</div>
+            <div class="rpt-tl-title">${t.title}</div>
           </div>
         `).join('')}
       </div>
     </div>
 
-    <!-- 5. 영양 목표 -->
-    <div class="result-section">
-      <h3>일일 영양 목표</h3>
-      <div class="calorie-card">
-        <div class="cal-item">
-          <div class="cal-label">목표 칼로리</div>
-          <div class="cal-value">${calories.target} kcal</div>
-        </div>
-        <div class="cal-item">
-          <div class="cal-label">단백질</div>
-          <div class="cal-value">${calories.protein}g</div>
-        </div>
-        <div class="cal-item">
-          <div class="cal-label">탄수화물</div>
-          <div class="cal-value">${Math.round(calories.target * 0.45 / 4)}g</div>
-        </div>
-        <div class="cal-item">
-          <div class="cal-label">지방</div>
-          <div class="cal-value">${Math.round(calories.target * 0.25 / 9)}g</div>
+    <!-- 영양 목표 + 건강 정보 -->
+    <div class="rpt-two-col">
+      <div class="rpt-card">
+        <div class="rpt-card-title">일일 영양 목표</div>
+        <div class="rpt-nutrition-flow">
+          <div class="rpt-nut-item">
+            <div class="rpt-nut-icon">🔥</div>
+            <div class="rpt-nut-value">${calories.target}<span>kcal</span></div>
+            <div class="rpt-nut-label">칼로리</div>
+          </div>
+          <div class="rpt-nut-arrow">→</div>
+          <div class="rpt-nut-item">
+            <div class="rpt-nut-icon">🥩</div>
+            <div class="rpt-nut-value">${calories.protein}<span>g</span></div>
+            <div class="rpt-nut-label">단백질</div>
+          </div>
+          <div class="rpt-nut-arrow">→</div>
+          <div class="rpt-nut-item">
+            <div class="rpt-nut-icon">🍚</div>
+            <div class="rpt-nut-value">${Math.round(calories.target * 0.45 / 4)}<span>g</span></div>
+            <div class="rpt-nut-label">탄수화물</div>
+          </div>
+          <div class="rpt-nut-arrow">→</div>
+          <div class="rpt-nut-item">
+            <div class="rpt-nut-icon">🥑</div>
+            <div class="rpt-nut-value">${Math.round(calories.target * 0.25 / 9)}<span>g</span></div>
+            <div class="rpt-nut-label">지방</div>
+          </div>
         </div>
       </div>
-      <div class="info-box" style="margin-top:12px">${calories.note}</div>
-    </div>
-
-    <!-- 6. 지금 시작하지 않으면 -->
-    <div class="result-section">
-      <h3>지금 시작하지 않는다면</h3>
-      <div class="risk-list">
-        ${buildHealthRisks(selectedGoals, a, d).map(r => `
-          <div class="risk-item risk-item--${r.level}">
-            <span class="risk-label">${r.label}</span>
-            <p class="risk-desc">${r.desc}</p>
-          </div>
-        `).join('')}
+      <div class="rpt-card">
+        <div class="rpt-card-title">건강 정보 & 주의사항</div>
+        <div class="rpt-health-list">
+          ${risks.slice(0, 5).map(r => `
+            <div class="rpt-health-item">
+              <span class="rpt-health-icon">${r.level === 'high' ? '❤️' : r.level === 'mid' ? '🔸' : '💬'}</span>
+              <span class="rpt-health-text">${r.label}</span>
+            </div>
+          `).join('')}
+        </div>
+        <p class="rpt-health-note">지속적인 관리가 필요합니다.</p>
       </div>
     </div>
 
     ${(medicalInfo.diseases.length || medicalInfo.medication || injury) ? `
-    <div class="result-section">
-      <h3>건강 정보 기반 맞춤 분석</h3>
+    <div class="rpt-card rpt-card--mb">
+      <div class="rpt-card-title">건강 정보 기반 맞춤 분석</div>
       ${renderMedicalAnalysis(d, a, medicalInfo, injury)}
     </div>
     ` : ''}
 
-    <!-- 클로징 멘트 -->
-    <div class="closing-box">
-      ${buildClosingMessage(d, a, selectedGoals)}
+    <!-- CTA 배너 -->
+    <div class="rpt-cta">
+      <div class="rpt-cta-left">
+        <div class="rpt-cta-headline">지금이 바로 변화의 시작입니다!</div>
+        <p class="rpt-cta-body">${buildClosingMessageShort(d, a, selectedGoals, targets, ptRec)}</p>
+      </div>
+      <button class="rpt-cta-btn" onclick="printResult()">상담 예약하기 →</button>
     </div>
   `;
 
   document.getElementById('result-content').innerHTML = html;
+}
+
+// ──────────────────────────────────────────────
+// 리포트 헬퍼: 지표 카드
+// ──────────────────────────────────────────────
+function renderMetricCard(label, current, target, unit, lowerIsBetter, icon) {
+  const diff = +(target - current).toFixed(1);
+  const isGood = lowerIsBetter ? diff < 0 : diff > 0;
+  const abs = Math.abs(diff);
+  const unitSuffix = unit === '%' ? '%p' : unit;
+  const changeText = diff < 0
+    ? `▼ ${abs}${unitSuffix} ${lowerIsBetter ? '개선' : '감소'}`
+    : `▲ ${abs}${unitSuffix} 증가`;
+  return `
+    <div class="rpt-metric-card">
+      <div class="rpt-metric-top">
+        <span class="rpt-metric-icon">${icon}</span>
+        <span class="rpt-metric-name">${label}</span>
+      </div>
+      <div class="rpt-metric-value">${current}<span class="rpt-metric-unit">${unit}</span></div>
+      <div class="rpt-metric-delta ${isGood ? 'rpt-delta--good' : 'rpt-delta--bad'}">${changeText}</div>
+    </div>`;
+}
+
+// ──────────────────────────────────────────────
+// 리포트 헬퍼: 목표 바 (현재/목표 2줄)
+// ──────────────────────────────────────────────
+function renderNewTargetBar(label, current, target, unit, lowerIsBetter) {
+  const maxVal = Math.max(current, target) * 1.3;
+  const curPct = Math.min(97, (current / maxVal) * 100);
+  const tgtPct = Math.min(97, (target / maxVal) * 100);
+  const isGood = lowerIsBetter ? target < current : target > current;
+  const diff = +(target - current).toFixed(1);
+  const diffText = diff > 0 ? `▲ ${diff}${unit}` : `▼ ${Math.abs(diff)}${unit}`;
+  return `
+    <div class="rpt-tbar-item">
+      <div class="rpt-tbar-header">
+        <span class="rpt-tbar-label">${label}</span>
+        <span class="rpt-tbar-vals">
+          <span class="rpt-tbar-cur">${current}${unit}</span>
+          <span class="rpt-tbar-diff ${isGood ? 'rpt-diff--good' : 'rpt-diff--bad'}">${diffText}</span>
+        </span>
+      </div>
+      <div class="rpt-tbar-track"><div class="rpt-tbar-fill rpt-tbar-fill--cur" style="width:${curPct}%"></div></div>
+      <div class="rpt-tbar-track" style="margin-top:3px"><div class="rpt-tbar-fill rpt-tbar-fill--tgt" style="width:${tgtPct}%"></div></div>
+    </div>`;
+}
+
+// ──────────────────────────────────────────────
+// 리포트 헬퍼: 위험도 게이지 SVG
+// ──────────────────────────────────────────────
+function renderRiskGauge(risks) {
+  const highCount = risks.filter(r => r.level === 'high').length;
+  const midCount  = risks.filter(r => r.level === 'mid').length;
+  let needleDeg, levelText, subText;
+  if (highCount >= 2)                          { needleDeg = 22;  levelText = '위험'; subText = '(주의 필요)'; }
+  else if (highCount === 1 || midCount >= 2)   { needleDeg = 90;  levelText = '주의'; subText = '(관리 필요)'; }
+  else                                          { needleDeg = 158; levelText = '양호'; subText = '(유지 권장)'; }
+
+  const L = Math.PI * 72;
+  const seg = (L / 3).toFixed(1);
+  const L2  = (L * 2).toFixed(1);
+  const rad = needleDeg * Math.PI / 180;
+  const nx  = (100 + 58 * Math.cos(rad)).toFixed(1);
+  const ny  = (95  - 58 * Math.sin(rad)).toFixed(1);
+
+  return `
+    <div class="rpt-gauge-wrap">
+      <svg viewBox="0 0 200 105" class="rpt-gauge-svg">
+        <path d="M 28 95 A 72 72 0 0 1 172 95" fill="none" stroke="#e5e7eb" stroke-width="18" stroke-linecap="butt"/>
+        <path d="M 28 95 A 72 72 0 0 1 172 95" fill="none" stroke="#22c55e" stroke-width="18" stroke-linecap="butt"
+              stroke-dasharray="${seg} ${L2}" stroke-dashoffset="0"/>
+        <path d="M 28 95 A 72 72 0 0 1 172 95" fill="none" stroke="#f59e0b" stroke-width="18" stroke-linecap="butt"
+              stroke-dasharray="${seg} ${L2}" stroke-dashoffset="-${seg}"/>
+        <path d="M 28 95 A 72 72 0 0 1 172 95" fill="none" stroke="#ef4444" stroke-width="18" stroke-linecap="butt"
+              stroke-dasharray="${seg} ${L2}" stroke-dashoffset="-${(L / 3 * 2).toFixed(1)}"/>
+        <line x1="100" y1="95" x2="${nx}" y2="${ny}" stroke="#111827" stroke-width="3" stroke-linecap="round"/>
+        <circle cx="100" cy="95" r="5" fill="#111827"/>
+      </svg>
+      <div class="rpt-gauge-label">${levelText}</div>
+      <div class="rpt-gauge-sub">${subText}</div>
+    </div>`;
+}
+
+// ──────────────────────────────────────────────
+// 리포트 헬퍼: PT 추천 카드
+// ──────────────────────────────────────────────
+function renderNewPTCard(p) {
+  return `
+    <div class="rpt-card rpt-card--mb rpt-pt-card">
+      <div class="rpt-card-title">추천 PT 프로그램</div>
+      <div class="rpt-pt-inner">
+        <div class="rpt-pt-img">
+          <div class="rpt-pt-img-bg">PT</div>
+        </div>
+        <div class="rpt-pt-info">
+          <div class="rpt-pt-name">${p.type} 프로그램</div>
+          <div class="rpt-pt-tags">
+            ${p.items.map(i => `<span class="rpt-pt-tag">${i}</span>`).join('')}
+          </div>
+          <ul class="rpt-pt-reasons">
+            ${p.reasons.map(r => `<li><span class="rpt-check">✓</span> ${r}</li>`).join('')}
+          </ul>
+          <div class="rpt-pt-sessions-row">
+            <div class="rpt-pt-sess-block">
+              <span class="rpt-pt-sess-label">세션 구성</span>
+              <span class="rpt-pt-sess-val">주 ${p.sessionsPerWeek}회 × ${p.weeks}주</span>
+            </div>
+            <div class="rpt-pt-sess-block">
+              <span class="rpt-pt-sess-label">단계별 계획</span>
+              <span class="rpt-pt-sess-val">${p.phaseNote}</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>`;
+}
+
+// ──────────────────────────────────────────────
+// 리포트 헬퍼: CTA 한 줄 멘트
+// ──────────────────────────────────────────────
+function buildClosingMessageShort(d, a, goals, targets, ptRec) {
+  const isObese     = a.fatStatus.label === '비만' || a.bmiStatus.label === '비만';
+  const isMuscleLow = a.muscleStatus.label === '근감소 주의';
+  if (isObese) {
+    return `체지방률을 ${targets.fatPercent}%까지 줄일 수 있습니다. 혼자 하는 운동과 전문 PT의 차이는 같은 시간을 써도 결과가 3배 이상 달라집니다.`;
+  }
+  if (isMuscleLow) {
+    return `골격근량 ${targets.muscle}kg을 목표로, 전문 PT와 함께 체계적인 근력 강화를 시작하세요. 근육은 저절로 만들어지지 않습니다.`;
+  }
+  return `${d.name}님의 목표 체성분은 ${targets.period} 내 충분히 달성 가능합니다. 지금 이 분석을 행동으로 옮기세요.`;
 }
 
 // ──────────────────────────────────────────────
