@@ -399,13 +399,17 @@ function renderResult() {
   const today = new Date();
   const dateStr = `${today.getFullYear()}.${String(today.getMonth()+1).padStart(2,'0')}.${String(today.getDate()).padStart(2,'0')}`;
 
+  const expLabel = { none: '운동 경험 없음', beginner: '초보', intermediate: '중급', advanced: '고급' }[exp];
+  const genderLabel = d.gender === 'male' ? '남성' : '여성';
+  const program = buildProgram(selectedGoals, exp, freq, a);
+
   const html = `
     <!-- 헤더 -->
     <div class="rpt-header">
       <div class="rpt-header-left">
         <div class="rpt-name">${d.name}님의 맞춤<br>운동 분석 보고서</div>
         <div class="rpt-subtitle">과학적 분석으로 더 건강한 내일을 설계하세요.</div>
-        <div class="rpt-date">분석일 ${dateStr}</div>
+        <div class="rpt-date">분석일 ${dateStr} · ${d.age}세 · ${genderLabel} · ${expLabel} · 주 ${freq}회</div>
       </div>
       <div class="rpt-achieve-badge">
         <div class="rpt-achieve-text">
@@ -415,12 +419,24 @@ function renderResult() {
       </div>
     </div>
 
-    <!-- 주요 지표 4개 -->
+    <!-- 인바디 전체 수치 -->
+    <div class="rpt-card rpt-card--mb">
+      <div class="rpt-card-title">인바디 측정 수치</div>
+      ${renderInbodyFull(d, a)}
+    </div>
+
+    <!-- 주요 지표 4개 (현재 → 목표 델타) -->
     <div class="rpt-metrics">
       ${renderMetricCard('체지방률', d.fatPercent, targets.fatPercent, '%', true)}
       ${renderMetricCard('골격근량', d.muscle, targets.muscle, 'kg', false)}
       ${renderMetricCard('체중', d.weight, targets.weight, 'kg', true)}
       ${d.bmr ? renderMetricCard('기초대사량', d.bmr, targets.bmr, 'kcal', false) : ''}
+    </div>
+
+    <!-- 체성분 진단 내러티브 -->
+    <div class="rpt-card rpt-card--mb">
+      <div class="rpt-card-title">체성분 종합 진단</div>
+      <div class="rpt-narrative">${buildNarrative(d, a)}</div>
     </div>
 
     <!-- 체성분 비교 + 건강 위험도 -->
@@ -435,6 +451,7 @@ function renderResult() {
         ${renderNewTargetBar('골격근량', d.muscle, targets.muscle, 'kg', false)}
         ${renderNewTargetBar('체중', d.weight, targets.weight, 'kg', true)}
         ${d.bmr ? renderNewTargetBar('기초대사량', d.bmr, targets.bmr, 'kcal', false) : ''}
+        <p class="rpt-target-note">${targets.period} 꾸준히 운동했을 때 달성 가능한 목표 수치</p>
       </div>
       <div class="rpt-card">
         <div class="rpt-card-title">건강 위험도</div>
@@ -454,6 +471,23 @@ function renderResult() {
     <!-- PT 프로그램 추천 -->
     ${renderNewPTCard(ptRec)}
 
+    <!-- 운동 구성 -->
+    <div class="rpt-card rpt-card--mb">
+      <div class="rpt-card-title">맞춤 운동 구성</div>
+      <div class="rpt-ex-list">
+        ${program.map(p => `
+          <div class="rpt-ex-item">
+            <div class="rpt-ex-header">
+              <span class="rpt-ex-type">${p.type}</span>
+              <span class="rpt-ex-meta">${p.duration}</span>
+              <span class="rpt-ex-intensity rpt-ex-intensity--${p.intensityColor}">${p.intensity}</span>
+            </div>
+            <p class="rpt-ex-content">${p.content}</p>
+          </div>
+        `).join('')}
+      </div>
+    </div>
+
     <!-- 타임라인 -->
     <div class="rpt-card rpt-card--mb">
       <div class="rpt-card-title">프로그램 로드맵 (${ptRec.weeks}주)</div>
@@ -466,48 +500,52 @@ function renderResult() {
             </div>
             <div class="rpt-tl-week">${t.week}</div>
             <div class="rpt-tl-title">${t.title}</div>
+            <div class="rpt-tl-desc">${t.desc}</div>
           </div>
         `).join('')}
       </div>
     </div>
 
-    <!-- 영양 목표 + 건강 정보 -->
-    <div class="rpt-two-col">
-      <div class="rpt-card">
-        <div class="rpt-card-title">일일 영양 목표</div>
-        <div class="rpt-nutrition-flow">
-          <div class="rpt-nut-item">
-            <div class="rpt-nut-value">${calories.target}<span>kcal</span></div>
-            <div class="rpt-nut-label">칼로리</div>
-          </div>
-          <div class="rpt-nut-arrow">→</div>
-          <div class="rpt-nut-item">
-            <div class="rpt-nut-value">${calories.protein}<span>g</span></div>
-            <div class="rpt-nut-label">단백질</div>
-          </div>
-          <div class="rpt-nut-arrow">→</div>
-          <div class="rpt-nut-item">
-            <div class="rpt-nut-value">${Math.round(calories.target * 0.45 / 4)}<span>g</span></div>
-            <div class="rpt-nut-label">탄수화물</div>
-          </div>
-          <div class="rpt-nut-arrow">→</div>
-          <div class="rpt-nut-item">
-            <div class="rpt-nut-value">${Math.round(calories.target * 0.25 / 9)}<span>g</span></div>
-            <div class="rpt-nut-label">지방</div>
-          </div>
+    <!-- 영양 목표 -->
+    <div class="rpt-card rpt-card--mb">
+      <div class="rpt-card-title">일일 영양 목표</div>
+      <div class="rpt-nutrition-flow">
+        <div class="rpt-nut-item">
+          <div class="rpt-nut-value">${calories.target}<span>kcal</span></div>
+          <div class="rpt-nut-label">목표 칼로리</div>
+        </div>
+        <div class="rpt-nut-arrow">→</div>
+        <div class="rpt-nut-item">
+          <div class="rpt-nut-value">${calories.protein}<span>g</span></div>
+          <div class="rpt-nut-label">단백질</div>
+        </div>
+        <div class="rpt-nut-arrow">→</div>
+        <div class="rpt-nut-item">
+          <div class="rpt-nut-value">${Math.round(calories.target * 0.45 / 4)}<span>g</span></div>
+          <div class="rpt-nut-label">탄수화물</div>
+        </div>
+        <div class="rpt-nut-arrow">→</div>
+        <div class="rpt-nut-item">
+          <div class="rpt-nut-value">${Math.round(calories.target * 0.25 / 9)}<span>g</span></div>
+          <div class="rpt-nut-label">지방</div>
         </div>
       </div>
-      <div class="rpt-card">
-        <div class="rpt-card-title">건강 정보 & 주의사항</div>
-        <div class="rpt-health-list">
-          ${risks.slice(0, 5).map(r => `
-            <div class="rpt-health-item">
-              <span class="rpt-health-dot rpt-health-dot--${r.level}"></span>
-              <span class="rpt-health-text">${r.label}</span>
+      <p class="rpt-nut-note">${calories.note}</p>
+    </div>
+
+    <!-- 건강 리스크 상세 -->
+    <div class="rpt-card rpt-card--mb">
+      <div class="rpt-card-title">지금 시작하지 않는다면</div>
+      <div class="rpt-risk-detail-list">
+        ${risks.map(r => `
+          <div class="rpt-risk-detail rpt-risk-detail--${r.level}">
+            <div class="rpt-risk-detail-hd">
+              <span class="rpt-risk-detail-label">${r.label}</span>
+              <span class="rpt-risk-badge rpt-risk-badge--${r.level}">${r.level === 'high' ? '위험' : r.level === 'mid' ? '주의' : '관찰'}</span>
             </div>
-          `).join('')}
-        </div>
-        <p class="rpt-health-note">지속적인 관리가 필요합니다.</p>
+            <p class="rpt-risk-detail-desc">${r.desc}</p>
+          </div>
+        `).join('')}
       </div>
     </div>
 
@@ -529,6 +567,33 @@ function renderResult() {
   `;
 
   document.getElementById('result-content').innerHTML = html;
+}
+
+// ──────────────────────────────────────────────
+// 리포트 헬퍼: 인바디 전체 수치 그리드
+// ──────────────────────────────────────────────
+function renderInbodyFull(d, a) {
+  const items = [
+    { label: '신장',      value: `${d.height} cm`,      badge: null },
+    { label: '체중',      value: `${d.weight} kg`,       badge: null },
+    { label: 'BMI',       value: d.bmi,                  badge: a.bmiStatus },
+    { label: '체지방량',  value: `${d.fat} kg`,           badge: null },
+    { label: '체지방률',  value: `${d.fatPercent}%`,      badge: a.fatStatus },
+    { label: '골격근량',  value: `${d.muscle} kg`,        badge: a.muscleStatus },
+    { label: '기초대사량',value: `${d.bmr} kcal`,         badge: null },
+  ];
+  if (d.whr)   items.push({ label: '복부지방률', value: d.whr,       badge: a.whrStatus });
+  if (d.water) items.push({ label: '체수분',     value: `${d.water} L`, badge: null });
+
+  return `<div class="rpt-inbody-grid">
+    ${items.map(it => `
+      <div class="rpt-inbody-item">
+        <div class="rpt-inbody-label">${it.label}</div>
+        <div class="rpt-inbody-value">${it.value}</div>
+        ${it.badge ? `<span class="s-badge ${it.badge.cls}">${it.badge.label}</span>` : '<span class="rpt-inbody-blank"></span>'}
+      </div>
+    `).join('')}
+  </div>`;
 }
 
 // ──────────────────────────────────────────────
