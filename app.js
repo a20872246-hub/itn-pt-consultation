@@ -405,10 +405,9 @@ function renderResult() {
       <div class="rpt-header-left">
         <div class="rpt-name">${d.name}님의 맞춤<br>운동 분석 보고서</div>
         <div class="rpt-subtitle">과학적 분석으로 더 건강한 내일을 설계하세요.</div>
-        <div class="rpt-date">📅 분석일 ${dateStr}</div>
+        <div class="rpt-date">분석일 ${dateStr}</div>
       </div>
       <div class="rpt-achieve-badge">
-        <div class="rpt-achieve-icon">🎯</div>
         <div class="rpt-achieve-text">
           <div class="rpt-achieve-title">목표 달성 가능!</div>
           <div class="rpt-achieve-desc">꾸준한 운동으로 ${targets.period} 후<br>목표 달성이 가능합니다.</div>
@@ -418,10 +417,10 @@ function renderResult() {
 
     <!-- 주요 지표 4개 -->
     <div class="rpt-metrics">
-      ${renderMetricCard('체지방률', d.fatPercent, targets.fatPercent, '%', true, '⊗')}
-      ${renderMetricCard('골격근량', d.muscle, targets.muscle, 'kg', false, '💪')}
-      ${renderMetricCard('체중', d.weight, targets.weight, 'kg', true, '⊟')}
-      ${d.bmr ? renderMetricCard('기초대사량', d.bmr, targets.bmr, 'kcal', false, '🔥') : ''}
+      ${renderMetricCard('체지방률', d.fatPercent, targets.fatPercent, '%', true)}
+      ${renderMetricCard('골격근량', d.muscle, targets.muscle, 'kg', false)}
+      ${renderMetricCard('체중', d.weight, targets.weight, 'kg', true)}
+      ${d.bmr ? renderMetricCard('기초대사량', d.bmr, targets.bmr, 'kcal', false) : ''}
     </div>
 
     <!-- 체성분 비교 + 건강 위험도 -->
@@ -443,7 +442,6 @@ function renderResult() {
         <div class="rpt-risk-items">
           ${risks.slice(0, 4).map(r => `
             <div class="rpt-risk-row">
-              <span class="rpt-risk-icon">${r.level === 'high' ? '❤️' : r.level === 'mid' ? '🔸' : '💬'}</span>
               <span class="rpt-risk-name">${r.label}</span>
               <span class="rpt-risk-badge rpt-risk-badge--${r.level}">${r.level === 'high' ? '위험' : r.level === 'mid' ? '주의' : '관찰'}</span>
             </div>
@@ -463,7 +461,7 @@ function renderResult() {
         ${buildTimeline(d, a, selectedGoals, ptRec).map((t, i, arr) => `
           <div class="rpt-tl-item">
             <div class="rpt-tl-top">
-              <div class="rpt-tl-icon">${['🏃','📊','✨','🏆'][i]}</div>
+              <div class="rpt-tl-icon">${i + 1}</div>
               ${i < arr.length - 1 ? '<div class="rpt-tl-line"></div>' : ''}
             </div>
             <div class="rpt-tl-week">${t.week}</div>
@@ -479,25 +477,21 @@ function renderResult() {
         <div class="rpt-card-title">일일 영양 목표</div>
         <div class="rpt-nutrition-flow">
           <div class="rpt-nut-item">
-            <div class="rpt-nut-icon">🔥</div>
             <div class="rpt-nut-value">${calories.target}<span>kcal</span></div>
             <div class="rpt-nut-label">칼로리</div>
           </div>
           <div class="rpt-nut-arrow">→</div>
           <div class="rpt-nut-item">
-            <div class="rpt-nut-icon">🥩</div>
             <div class="rpt-nut-value">${calories.protein}<span>g</span></div>
             <div class="rpt-nut-label">단백질</div>
           </div>
           <div class="rpt-nut-arrow">→</div>
           <div class="rpt-nut-item">
-            <div class="rpt-nut-icon">🍚</div>
             <div class="rpt-nut-value">${Math.round(calories.target * 0.45 / 4)}<span>g</span></div>
             <div class="rpt-nut-label">탄수화물</div>
           </div>
           <div class="rpt-nut-arrow">→</div>
           <div class="rpt-nut-item">
-            <div class="rpt-nut-icon">🥑</div>
             <div class="rpt-nut-value">${Math.round(calories.target * 0.25 / 9)}<span>g</span></div>
             <div class="rpt-nut-label">지방</div>
           </div>
@@ -508,7 +502,7 @@ function renderResult() {
         <div class="rpt-health-list">
           ${risks.slice(0, 5).map(r => `
             <div class="rpt-health-item">
-              <span class="rpt-health-icon">${r.level === 'high' ? '❤️' : r.level === 'mid' ? '🔸' : '💬'}</span>
+              <span class="rpt-health-dot rpt-health-dot--${r.level}"></span>
               <span class="rpt-health-text">${r.label}</span>
             </div>
           `).join('')}
@@ -540,7 +534,7 @@ function renderResult() {
 // ──────────────────────────────────────────────
 // 리포트 헬퍼: 지표 카드
 // ──────────────────────────────────────────────
-function renderMetricCard(label, current, target, unit, lowerIsBetter, icon) {
+function renderMetricCard(label, current, target, unit, lowerIsBetter) {
   const diff = +(target - current).toFixed(1);
   const isGood = lowerIsBetter ? diff < 0 : diff > 0;
   const abs = Math.abs(diff);
@@ -550,10 +544,7 @@ function renderMetricCard(label, current, target, unit, lowerIsBetter, icon) {
     : `▲ ${abs}${unitSuffix} 증가`;
   return `
     <div class="rpt-metric-card">
-      <div class="rpt-metric-top">
-        <span class="rpt-metric-icon">${icon}</span>
-        <span class="rpt-metric-name">${label}</span>
-      </div>
+      <div class="rpt-metric-name">${label}</div>
       <div class="rpt-metric-value">${current}<span class="rpt-metric-unit">${unit}</span></div>
       <div class="rpt-metric-delta ${isGood ? 'rpt-delta--good' : 'rpt-delta--bad'}">${changeText}</div>
     </div>`;
@@ -636,7 +627,7 @@ function renderNewPTCard(p) {
             ${p.items.map(i => `<span class="rpt-pt-tag">${i}</span>`).join('')}
           </div>
           <ul class="rpt-pt-reasons">
-            ${p.reasons.map(r => `<li><span class="rpt-check">✓</span> ${r}</li>`).join('')}
+            ${p.reasons.map(r => `<li>${r}</li>`).join('')}
           </ul>
           <div class="rpt-pt-sessions-row">
             <div class="rpt-pt-sess-block">
