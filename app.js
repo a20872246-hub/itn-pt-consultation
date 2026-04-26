@@ -166,6 +166,7 @@ document.addEventListener('DOMContentLoaded', () => {
 // STEP 네비게이션
 // ──────────────────────────────────────────────
 function goToStep1() {
+  resetUploadArea();
   showStep(1);
 }
 
@@ -492,12 +493,9 @@ function renderResult() {
     <div class="rpt-card rpt-card--mb">
       <div class="rpt-card-title">프로그램 로드맵 (${ptRec.weeks}주)</div>
       <div class="rpt-timeline-h">
-        ${buildTimeline(d, a, selectedGoals, ptRec).map((t, i, arr) => `
+        ${buildTimeline(d, a, selectedGoals, ptRec).map((t, i) => `
           <div class="rpt-tl-item">
-            <div class="rpt-tl-top">
-              <div class="rpt-tl-icon">${i + 1}</div>
-              ${i < arr.length - 1 ? '<div class="rpt-tl-line"></div>' : ''}
-            </div>
+            <div class="rpt-tl-icon">${i + 1}</div>
             <div class="rpt-tl-week">${t.week}</div>
             <div class="rpt-tl-title">${t.title}</div>
             <div class="rpt-tl-desc">${t.desc}</div>
@@ -694,15 +692,11 @@ function renderNewPTCard(p) {
           <ul class="rpt-pt-reasons">
             ${p.reasons.map(r => `<li>${r}</li>`).join('')}
           </ul>
+          <div class="rpt-pt-total-banner">
+            <span class="rpt-pt-total-num">${p.totalSessions}회</span>
+            <span class="rpt-pt-total-sub">총 추천 횟수 · 주 ${p.sessionsPerWeek}회 × ${p.weeks}주</span>
+          </div>
           <div class="rpt-pt-sessions-row">
-            <div class="rpt-pt-sess-block">
-              <span class="rpt-pt-sess-label">세션 구성</span>
-              <span class="rpt-pt-sess-val">주 ${p.sessionsPerWeek}회 × ${p.weeks}주</span>
-            </div>
-            <div class="rpt-pt-sess-block">
-              <span class="rpt-pt-sess-label">총 추천 횟수</span>
-              <span class="rpt-pt-sess-val rpt-pt-total">${p.totalSessions}회</span>
-            </div>
             <div class="rpt-pt-sess-block rpt-pt-sess-block--full">
               <span class="rpt-pt-sess-label">단계별 계획</span>
               <span class="rpt-pt-sess-val">${p.phaseNote}</span>
@@ -1616,7 +1610,23 @@ function resetAll() {
   if (!confirm('새 상담을 시작하시겠습니까? 현재 입력 내용이 초기화됩니다.')) return;
   document.querySelectorAll('input, select, textarea').forEach(el => { el.value = ''; });
   document.querySelectorAll('.goal-card').forEach(c => c.classList.remove('selected'));
+  document.querySelectorAll('.disease-tag').forEach(c => c.classList.remove('active'));
   selectedGoals = [];
   inbodyData = {};
+  resetUploadArea();
   showStep(1);
+}
+
+function resetUploadArea() {
+  const status = document.getElementById('upload-status');
+  const area   = document.getElementById('upload-area');
+  const input  = document.getElementById('inbody-file');
+  if (status) status.className = 'upload-status hidden';
+  if (input)  input.value = '';
+  if (area) {
+    area.classList.remove('has-file');
+    area.querySelector('.upload-icon').textContent  = '📄';
+    area.querySelector('.upload-title').textContent = '인바디 결과지 업로드';
+    area.querySelector('.upload-sub').textContent   = 'JPG, PNG, PDF 지원 · 클릭 또는 드래그';
+  }
 }
