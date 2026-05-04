@@ -1630,3 +1630,89 @@ function resetUploadArea() {
     area.querySelector('.upload-sub').textContent   = 'JPG, PNG, PDF 지원 · 클릭 또는 드래그';
   }
 }
+
+// ──────────────────────────────────────────────
+// 카카오톡 공유
+// ──────────────────────────────────────────────
+function buildShareText() {
+  const d = inbodyData;
+  const a = analyzeInbody();
+  const exp = document.getElementById('experience').value;
+  const freq = +document.getElementById('frequency').value;
+  const injury = document.getElementById('injury').value.trim();
+  const targets = calcTargets(d, a);
+  const ptRec = recommendPTPrograms(selectedGoals, a, exp, injury);
+  const centerName = document.getElementById('center-name').value.trim();
+  const today = new Date();
+  const dateStr = `${today.getFullYear()}.${String(today.getMonth()+1).padStart(2,'0')}.${String(today.getDate()).padStart(2,'0')}`;
+  const goalLabels = { diet:'체중 감량', muscle:'근육 증가', recomp:'체형 교정', health:'건강 관리', posture:'자세 교정', sport:'스포츠 퍼포먼스' };
+
+  const lines = [];
+  if (centerName) lines.push(`[ ${centerName} ] 운동 분석 결과`);
+  else lines.push('[ 운동 분석 결과 ]');
+  lines.push('');
+  lines.push(`회원명: ${d.name}님`);
+  lines.push(`분석일: ${dateStr}`);
+  lines.push(`운동 목적: ${selectedGoals.map(g => goalLabels[g] || g).join(', ')}`);
+  lines.push('');
+  lines.push('─── 체성분 현황 ───');
+  lines.push(`체지방률: ${d.fatPercent}% (${a.fatStatus.label})`);
+  lines.push(`골격근량: ${d.muscle}kg (${a.muscleStatus.label})`);
+  lines.push(`체중: ${d.weight}kg  /  BMI: ${d.bmi} (${a.bmiStatus.label})`);
+  if (d.whr && a.whrStatus) lines.push(`복부지방률: ${d.whr} (${a.whrStatus.label})`);
+  if (d.bmr) lines.push(`기초대사량: ${d.bmr}kcal`);
+  lines.push('');
+  lines.push('─── 목표 수치 ───');
+  lines.push(`체지방률: ${d.fatPercent}% → ${targets.fatPercent}% (▼${+(d.fatPercent - targets.fatPercent).toFixed(1)}%p)`);
+  lines.push(`골격근량: ${d.muscle}kg → ${targets.muscle}kg (▲${+(targets.muscle - d.muscle).toFixed(1)}kg)`);
+  lines.push(`체중: ${d.weight}kg → ${targets.weight}kg`);
+  lines.push('');
+  lines.push('─── 추천 PT 프로그램 ───');
+  lines.push(`${ptRec.type}`);
+  lines.push(`총 ${ptRec.totalSessions}회 (주 ${ptRec.sessionsPerWeek}회 × ${ptRec.weeks}주)`);
+  if (ptRec.items.length) lines.push(`구성: ${ptRec.items.join(', ')}`);
+  lines.push('');
+  lines.push('지금 시작하면 ' + targets.period + ' 후 목표 달성이 가능합니다.');
+  lines.push('더 자세한 내용은 상담 시 확인해주세요.');
+
+  return lines.join('\n');
+}
+
+async function shareKakao() {
+  const text = buildShareText();
+
+  // 모바일: Web Share API (카카오톡 포함 네이티브 공유)
+  if (navigator.share) {
+    try {
+      await navigator.share({
+        title: `${inbodyData.name}님 운동 분석 결과`,
+        text,
+      });
+      return;
+    } catch (e) {
+      // 사용자가 취소한 경우 모달로 fallback
+    }
+  }
+
+  // 데스크톱 fallback: 모달에 텍스트 표시
+  document.getElementById('kakao-share-text').value = text;
+  document.getElementById('kakao-copy-confirm').classList.add('hidden');
+  document.getElementById('kakao-modal').classList.remove('hidden');
+}
+
+function closeKakaoModal() {
+  document.getElementById('kakao-modal').classList.add('hidden');
+}
+
+async function copyKakaoText() {
+  const text = document.getElementById('kakao-share-text').value;
+  try {
+    await navigator.clipboard.writeText(text);
+  } catch {
+    document.getElementById('kakao-share-text').select();
+    document.execCommand('copy');
+  }
+  const confirm = document.getElementById('kakao-copy-confirm');
+  confirm.classList.remove('hidden');
+  setTimeout(() => confirm.classList.add('hidden'), 2500);
+}

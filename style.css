@@ -1928,3 +1928,86 @@ header .subtitle {
 @media print {
   .rpt-cta-btn { display: none; }
 }
+
+/* 카카오톡 버튼 */
+.btn-kakao {
+  background: #FEE500;
+  color: #3C1E1E;
+  border: none;
+  padding: 14px 24px;
+  border-radius: 10px;
+  font-size: 1rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.btn-kakao:hover { background: #F0D800; }
+
+/* 카카오 공유 모달 */
+.kakao-modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.45);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: 20px;
+}
+
+.kakao-modal-overlay.hidden { display: none; }
+
+.kakao-modal {
+  background: white;
+  border-radius: 16px;
+  padding: 28px;
+  width: 100%;
+  max-width: 480px;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.2);
+}
+
+.kakao-modal-title {
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: #1a1a2e;
+  margin-bottom: 8px;
+}
+
+.kakao-modal-desc {
+  font-size: 0.85rem;
+  color: #666;
+  margin-bottom: 14px;
+}
+
+.kakao-modal-text {
+  width: 100%;
+  padding: 12px;
+  border: 1.5px solid #e0e0e0;
+  border-radius: 8px;
+  font-size: 0.83rem;
+  line-height: 1.7;
+  color: #333;
+  resize: none;
+  background: #f9fafb;
+  margin-bottom: 14px;
+  font-family: inherit;
+}
+
+.kakao-modal-btns {
+  display: flex;
+  gap: 10px;
+  justify-content: flex-end;
+}
+
+.kakao-copy-confirm {
+  font-size: 0.82rem;
+  color: #16a34a;
+  font-weight: 600;
+  text-align: center;
+  margin-top: 10px;
+}
+
+@media print {
+  .btn-kakao, .kakao-modal-overlay { display: none !important; }
+}

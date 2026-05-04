@@ -246,8 +246,23 @@
       <div id="result-content"></div>
       <div class="btn-row" style="margin-top:30px">
         <button class="btn-secondary" onclick="goToStep2()">← 목적 수정</button>
-        <button class="btn-primary" onclick="printResult()">🖨️ 결과 출력</button>
-        <button class="btn-reset" onclick="resetAll()">🔄 새 상담 시작</button>
+        <button class="btn-kakao" onclick="shareKakao()">카카오톡 전송</button>
+        <button class="btn-primary" onclick="printResult()">결과 출력</button>
+        <button class="btn-reset" onclick="resetAll()">새 상담 시작</button>
+      </div>
+
+      <!-- 카카오톡 공유 모달 -->
+      <div class="kakao-modal-overlay hidden" id="kakao-modal">
+        <div class="kakao-modal">
+          <div class="kakao-modal-title">카카오톡 전송</div>
+          <p class="kakao-modal-desc">아래 내용을 복사해서 카카오톡으로 전송하세요.</p>
+          <textarea class="kakao-modal-text" id="kakao-share-text" readonly rows="12"></textarea>
+          <div class="kakao-modal-btns">
+            <button class="btn-secondary" onclick="closeKakaoModal()">닫기</button>
+            <button class="btn-kakao" onclick="copyKakaoText()">복사하기</button>
+          </div>
+          <p class="kakao-copy-confirm hidden" id="kakao-copy-confirm">클립보드에 복사됐습니다.</p>
+        </div>
       </div>
     </section>
   </div>
